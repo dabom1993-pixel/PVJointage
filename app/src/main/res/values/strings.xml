@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">PV Jointage</string>
-    <string name="title_champ">B-Champ</string>
+    <string name="titre_onglet_principal">PV de JOINTAGE</string>
+    <string name="title_champ">PV de JOINTAGE - DÉTAIL DE LA BRIDE</string>
     <string name="title_photos">Photos item</string>
+    <string name="fermer">Fermer</string>
 
     <!-- Header -->
     <string name="departement">Département Grands Arrêts</string>
@@ -56,7 +58,6 @@
     <string name="autre">A</string>
 
     <string name="btn_terrain">B-Champ</string>
-    <string name="btn_enregistrer">Enregistrer</string>
     <string name="btn_prendre_photo">Prendre une photo</string>
     <string name="btn_export">Exporter</string>
 
@@ -74,5 +75,4 @@
 
     <string name="schema_titre">SCHÉMA / PLAN DE L\'ÉQUIPEMENT</string>
     <string name="aucun_schema">Aucun schéma pour cet item</string>
-    <string name="btn_ajouter_schema">Ajouter / remplacer le schéma</string>
 </resources>

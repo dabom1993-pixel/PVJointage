@@ -1,16 +1,15 @@
 package com.adf.pvjointage.ui
 
+import android.app.Dialog
 import android.content.Intent
-import android.net.Uri
 import android.os.Bundle
-import android.text.Editable
-import android.text.TextWatcher
+import android.view.GestureDetector
 import android.view.Menu
 import android.view.MenuItem
+import android.view.MotionEvent
 import android.view.View
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -19,15 +18,13 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import coil.load
 import com.adf.pvjointage.PvApp
 import com.adf.pvjointage.R
-import com.adf.pvjointage.data.ItemSchema
 import com.adf.pvjointage.data.PvHeader
 import com.adf.pvjointage.databinding.ActivityMainBinding
+import com.adf.pvjointage.databinding.DialogSchemaZoomBinding
 import com.adf.pvjointage.export.ExportManager
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import java.io.File
-import java.util.Calendar
-import java.util.Locale
 
 class MainActivity : AppCompatActivity() {
 
@@ -48,9 +45,15 @@ class MainActivity : AppCompatActivity() {
     private var selectedItem: String = ""
     private var suppressSpinnerEvents = false
     private var schemaJob: kotlinx.coroutines.Job? = null
+    private var currentSchemaFile: File? = null
 
-    private val pickSchemaImage = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
-        if (uri != null) saveSchemaFromUri(uri)
+    private val schemaGestureDetector by lazy {
+        GestureDetector(this, object : GestureDetector.SimpleOnGestureListener() {
+            override fun onDoubleTap(e: MotionEvent): Boolean {
+                openSchemaFullscreen()
+                return true
+            }
+        })
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -64,35 +67,12 @@ class MainActivity : AppCompatActivity() {
 
         lifecycleScope.launch { repo.ensureSeedData(); observeHeader(); observeUnites() }
 
-        binding.etDate.setOnClickListener { showDatePicker() }
-        binding.btnAjouterSchema.setOnClickListener { pickSchemaImage.launch("image/*") }
+        binding.imgSchema.setOnTouchListener { _, event ->
+            schemaGestureDetector.onTouchEvent(event)
+            true
+        }
 
-        attachHeaderWatchers()
         observeBridesAndInspections()
-    }
-
-    private fun showDatePicker() {
-        val cal = Calendar.getInstance()
-        android.app.DatePickerDialog(this, { _, y, m, d ->
-            val date = String.format(Locale.FRANCE, "%02d/%02d/%04d", d, m + 1, y)
-            binding.etDate.setText(date)
-            currentHeader = currentHeader.copy(date = date)
-            saveHeader()
-        }, cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH)).show()
-    }
-
-    private fun attachHeaderWatchers() {
-        binding.etClient.addTextChangedOnly { currentHeader = currentHeader.copy(client = it); saveHeader() }
-        binding.etLieu.addTextChangedOnly { currentHeader = currentHeader.copy(lieu = it); saveHeader() }
-        binding.etFaitPar.addTextChangedOnly { currentHeader = currentHeader.copy(faitPar = it); saveHeader() }
-    }
-
-    private fun com.google.android.material.textfield.TextInputEditText.addTextChangedOnly(onChanged: (String) -> Unit) {
-        this.addTextChangedListener(object : TextWatcher {
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-            override fun afterTextChanged(s: Editable?) { onChanged(s?.toString() ?: "") }
-        })
     }
 
     private fun saveHeader() {
@@ -228,10 +208,12 @@ class MainActivity : AppCompatActivity() {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 repo.getSchemaForItem(selectedUnite, selectedFamille, selectedItem).collect { schema ->
                     if (schema != null && File(schema.filePath).exists()) {
-                        binding.imgSchema.load(File(schema.filePath))
+                        currentSchemaFile = File(schema.filePath)
+                        binding.imgSchema.load(currentSchemaFile)
                         binding.imgSchema.visibility = View.VISIBLE
                         binding.emptySchemaLayout.visibility = View.GONE
                     } else {
+                        currentSchemaFile = null
                         binding.imgSchema.visibility = View.GONE
                         binding.emptySchemaLayout.visibility = View.VISIBLE
                     }
@@ -240,23 +222,17 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun saveSchemaFromUri(uri: Uri) {
-        if (selectedUnite.isBlank() || selectedItem.isBlank()) return
-        lifecycleScope.launch {
-            try {
-                val destDir = (getExternalFilesDir("schemas") ?: filesDir).apply { mkdirs() }
-                val fileName = "schema_${selectedUnite}_${selectedFamille}_${selectedItem}.png"
-                val destFile = File(destDir, fileName)
-                contentResolver.openInputStream(uri)?.use { input ->
-                    destFile.outputStream().use { output -> input.copyTo(output) }
-                }
-                repo.saveSchema(
-                    ItemSchema(unite = selectedUnite, famille = selectedFamille, item = selectedItem, filePath = destFile.absolutePath)
-                )
-            } catch (e: Exception) {
-                android.widget.Toast.makeText(this@MainActivity, "Impossible d'importer l'image", android.widget.Toast.LENGTH_SHORT).show()
-            }
+    /** Affiche le schéma en plein écran, avec zoom (pincement à deux doigts) et fermeture par la croix. */
+    private fun openSchemaFullscreen() {
+        val file = currentSchemaFile ?: return
+        val dialog = Dialog(this, android.R.style.Theme_Black_NoTitleBar_Fullscreen)
+        val dialogBinding = DialogSchemaZoomBinding.inflate(layoutInflater)
+        dialog.setContentView(dialogBinding.root)
+        dialogBinding.imgZoom.load(file) {
+            listener(onSuccess = { _, _ -> dialogBinding.imgZoom.fitToView() })
         }
+        dialogBinding.btnFermerZoom.setOnClickListener { dialog.dismiss() }
+        dialog.show()
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {

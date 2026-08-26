@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Logo provisoire (4 carrés) en attendant le vrai logo Groupe ADF, à remplacer par
+     un fichier logo_adf.png dans ce même dossier (voir README). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M4,4h18v18h-18z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.55"
+        android:pathData="M26,4h18v18h-18z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.55"
+        android:pathData="M4,26h18v18h-18z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M26,26h18v18h-18z" />
+</vector>

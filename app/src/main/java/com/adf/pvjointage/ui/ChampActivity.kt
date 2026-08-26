@@ -3,7 +3,6 @@ package com.adf.pvjointage.ui
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
-import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
@@ -71,7 +70,6 @@ class ChampActivity : AppCompatActivity() {
         setupPhotos()
 
         binding.btnPrendrePhoto.setOnClickListener { requestCameraAndLaunch() }
-        binding.btnEnregistrer.setOnClickListener { saveAndClose() }
     }
 
     private fun setupLabels() {
@@ -100,7 +98,8 @@ class ChampActivity : AppCompatActivity() {
         binding.selAssemblageExcentration.setLabel(getString(R.string.assemblage_excentration))
         binding.selAssemblageExcentration.setAutreVisible(false)
 
-        val listener: (Etat) -> Unit = { refreshStatuts() }
+        // Chaque changement de statut est immédiatement enregistré (plus de bouton "Enregistrer").
+        val listener: (Etat) -> Unit = { refreshStatuts(); saveInspection() }
         listOf(
             binding.selEtiMiseSerree, binding.selEtiNomDate,
             binding.selJointMatiere, binding.selJointDimension, binding.selJointAspect,
@@ -193,7 +192,7 @@ class ChampActivity : AppCompatActivity() {
         takePicture.launch(uri)
     }
 
-    private fun saveAndClose() {
+    private fun saveInspection() {
         val result = InspectionResult(
             unite = unite, famille = famille, item = item, rep = rep,
             etiMiseSerree = binding.selEtiMiseSerree.etat.code,
@@ -210,10 +209,6 @@ class ChampActivity : AppCompatActivity() {
             assemblageParallelisme = binding.selAssemblageParallelisme.etat.code,
             assemblageExcentration = binding.selAssemblageExcentration.etat.code
         )
-        lifecycleScope.launch {
-            repo.saveInspection(result)
-            Toast.makeText(this@ChampActivity, "Contrôle enregistré", Toast.LENGTH_SHORT).show()
-            finish()
-        }
+        lifecycleScope.launch { repo.saveInspection(result) }
     }
 }

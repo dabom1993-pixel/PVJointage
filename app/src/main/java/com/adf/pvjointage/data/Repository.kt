@@ -2,6 +2,10 @@ package com.adf.pvjointage.data
 
 import android.content.Context
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class Repository(context: Context) {
     private val db = AppDatabase.getInstance(context)
@@ -18,7 +22,9 @@ class Repository(context: Context) {
 
     // En-tête PV
     fun getHeader(): Flow<PvHeader?> = db.pvHeaderDao().getHeader()
-    suspend fun saveHeader(header: PvHeader) = db.pvHeaderDao().save(header)
+
+    /** La Date est recalculée automatiquement à chaque enregistrement (jamais saisie à la main). */
+    suspend fun saveHeader(header: PvHeader) = db.pvHeaderDao().save(header.copy(date = today()))
 
     // Résultats de contrôle
     fun getInspectionsForItem(unite: String, famille: String, item: String): Flow<List<InspectionResult>> =
@@ -27,14 +33,26 @@ class Repository(context: Context) {
     suspend fun getInspectionForBride(unite: String, famille: String, item: String, rep: String): InspectionResult? =
         db.inspectionResultDao().getForBride(unite, famille, item, rep)
 
-    suspend fun saveInspection(result: InspectionResult) = db.inspectionResultDao().upsert(result)
+    suspend fun saveInspection(result: InspectionResult) {
+        db.inspectionResultDao().upsert(result)
+        touchDate()
+    }
 
     // Photos
     fun getPhotosForItem(unite: String, famille: String, item: String): Flow<List<Photo>> =
         db.photoDao().getForItem(unite, famille, item)
 
-    suspend fun addPhoto(photo: Photo): Long = db.photoDao().insert(photo)
-    suspend fun deletePhoto(photo: Photo) = db.photoDao().delete(photo)
+    suspend fun addPhoto(photo: Photo): Long {
+        val id = db.photoDao().insert(photo)
+        touchDate()
+        return id
+    }
+
+    suspend fun deletePhoto(photo: Photo) {
+        db.photoDao().delete(photo)
+        touchDate()
+    }
+
     suspend fun countPhotos(unite: String, famille: String, item: String): Int =
         db.photoDao().countForItem(unite, famille, item)
 
@@ -42,5 +60,11 @@ class Repository(context: Context) {
     fun getSchemaForItem(unite: String, famille: String, item: String): Flow<ItemSchema?> =
         db.itemSchemaDao().getForItem(unite, famille, item)
 
-    suspend fun saveSchema(schema: ItemSchema) = db.itemSchemaDao().upsert(schema)
+    private fun today(): String = SimpleDateFormat("dd/MM/yyyy", Locale.FRANCE).format(Date())
+
+    /** Met à jour uniquement la Date de l'en-tête suite à une modification de données. */
+    private suspend fun touchDate() {
+        val current = db.pvHeaderDao().getHeader().first() ?: PvHeader()
+        db.pvHeaderDao().save(current.copy(date = today()))
+    }
 }
