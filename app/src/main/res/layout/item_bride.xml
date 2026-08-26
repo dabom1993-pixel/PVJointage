@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/rowRoot"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:padding="6dp"
+    android:gravity="center_vertical"
+    android:background="?attr/selectableItemBackground"
+    android:clickable="true"
+    android:focusable="true">
+
+    <TextView android:id="@+id/tvRep" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="0.6" android:textStyle="bold" android:textSize="12sp"/>
+
+    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1.6" android:orientation="vertical">
+        <TextView android:id="@+id/tvDesignation" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="12sp"/>
+        <TextView android:id="@+id/tvDetails" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="9sp" android:textColor="@color/en_attente"/>
+    </LinearLayout>
+
+    <TextView android:id="@+id/tvEtiquette" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="0.9" android:gravity="center" android:textSize="9sp" android:textColor="@color/white" android:padding="3dp"/>
+    <TextView android:id="@+id/tvJoint" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="0.9" android:gravity="center" android:textSize="9sp" android:textColor="@color/white" android:padding="3dp"/>
+    <TextView android:id="@+id/tvBoulonnerie" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="0.9" android:gravity="center" android:textSize="9sp" android:textColor="@color/white" android:padding="3dp"/>
+    <TextView android:id="@+id/tvAssemblage" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="0.9" android:gravity="center" android:textSize="9sp" android:textColor="@color/white" android:padding="3dp"/>
+    <TextView android:id="@+id/tvConforme" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:textSize="9sp" android:textStyle="bold" android:textColor="@color/white" android:padding="3dp"/>
+
+</LinearLayout>

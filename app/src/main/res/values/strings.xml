@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">PV Jointage</string>
+    <string name="title_champ">B-Champ</string>
+    <string name="title_photos">Photos item</string>
+
+    <!-- Header -->
+    <string name="departement">Département Grands Arrêts</string>
+    <string name="titre_pv">PV DE JOINTAGE</string>
+    <string name="client">Client</string>
+    <string name="lieu">Lieu</string>
+    <string name="date">Date</string>
+    <string name="fait_par">Fait par</string>
+    <string name="unite">Unité</string>
+    <string name="type_equipement">Type d\'équipement :</string>
+    <string name="item_label">ITEM :</string>
+
+    <!-- Columns 1-Exemple table -->
+    <string name="col_rep">Rep.</string>
+    <string name="col_designation">Désignation</string>
+    <string name="col_dn">DN</string>
+    <string name="col_pn">PN</string>
+    <string name="col_matiere">Matière</string>
+    <string name="col_rondelle">Rondelle</string>
+    <string name="col_etiquette">Etiquette</string>
+    <string name="col_joint">Joint</string>
+    <string name="col_boulonnerie">Boulonnerie</string>
+    <string name="col_assemblage">Assemblage</string>
+    <string name="col_conforme">Conforme</string>
+
+    <!-- B-Champ -->
+    <string name="titre_serrage">PV DE SERRAGE CONTRÔLE</string>
+    <string name="localisation">LOCALISATION</string>
+    <string name="repere_bride">Repère de la bride</string>
+    <string name="section_etiquette">ETIQUETTE</string>
+    <string name="etiquette_mise_serree">Etiquette mise et serrée</string>
+    <string name="etiquette_nom_date">Nom (numéro GTIS) + Date lisible</string>
+    <string name="section_joint">JOINT</string>
+    <string name="joint_matiere_conforme">Matière conforme au plan/spec</string>
+    <string name="joint_dimension_centrage">Dimension \&amp; centrage</string>
+    <string name="joint_aspect_neuf">Aspect du joint neuf</string>
+    <string name="section_boulonnerie">BOULONNERIE</string>
+    <string name="boulon_neuves">Neuves</string>
+    <string name="boulon_rondelles">Rondelles</string>
+    <string name="boulon_equilibrage">Equilibrage</string>
+    <string name="boulon_graissage">Graissage</string>
+    <string name="boulon_longueur_diametre">Longueur / Diamètre</string>
+    <string name="boulon_matiere">Matière boulonnerie</string>
+    <string name="section_assemblage">ASSEMBLAGE</string>
+    <string name="assemblage_parallelisme">Parallélisme</string>
+    <string name="assemblage_excentration">Excentration</string>
+    <string name="section_photo">PHOTO (ETIQUETTE &amp; ASSEMBLAGE)</string>
+
+    <string name="oui">O</string>
+    <string name="non">N</string>
+    <string name="autre">A</string>
+
+    <string name="btn_terrain">B-Champ</string>
+    <string name="btn_enregistrer">Enregistrer</string>
+    <string name="btn_prendre_photo">Prendre une photo</string>
+    <string name="btn_export">Exporter</string>
+
+    <string name="choisir_unite">Unité</string>
+    <string name="choisir_type">Type d\'équipement</string>
+    <string name="choisir_item">ITEM</string>
+
+    <string name="statut_conforme">CONFORME</string>
+    <string name="statut_non_conforme">NON CONFORME</string>
+    <string name="statut_attente">EN ATTENTE</string>
+
+    <string name="export_done">Export terminé : %1$s</string>
+    <string name="aucune_photo">Aucune photo pour cet item</string>
+    <string name="supprimer">Supprimer</string>
+
+    <string name="schema_titre">SCHÉMA / PLAN DE L\'ÉQUIPEMENT</string>
+    <string name="aucun_schema">Aucun schéma pour cet item</string>
+    <string name="btn_ajouter_schema">Ajouter / remplacer le schéma</string>
+</resources>

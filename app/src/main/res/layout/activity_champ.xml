@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/background">
+
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="@color/primary"
+        android:titleTextColor="@color/white"
+        app:title="@string/title_champ"
+        app:navigationIcon="@drawable/ic_back"
+        app:navigationIconTint="@color/white" />
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="14dp">
+
+            <TextView
+                android:id="@+id/tvContexte"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textStyle="bold"
+                android:textSize="16sp"
+                android:textColor="@color/primary_dark"
+                android:layout_marginBottom="10dp"/>
+
+            <!-- ETIQUETTE -->
+            <androidx.cardview.widget.CardView android:layout_width="match_parent" android:layout_height="wrap_content" app:cardCornerRadius="8dp" app:cardElevation="2dp" android:layout_marginBottom="10dp">
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="12dp">
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical">
+                        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="@string/section_etiquette" android:textStyle="bold" android:textColor="@color/primary"/>
+                        <TextView android:id="@+id/tvStatutEtiquette" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textStyle="bold" android:padding="4dp"/>
+                    </LinearLayout>
+                    <com.adf.pvjointage.ui.EtatSelectorView android:id="@+id/selEtiMiseSerree" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+                    <com.adf.pvjointage.ui.EtatSelectorView android:id="@+id/selEtiNomDate" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- JOINT -->
+            <androidx.cardview.widget.CardView android:layout_width="match_parent" android:layout_height="wrap_content" app:cardCornerRadius="8dp" app:cardElevation="2dp" android:layout_marginBottom="10dp">
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="12dp">
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical">
+                        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="@string/section_joint" android:textStyle="bold" android:textColor="@color/primary"/>
+                        <TextView android:id="@+id/tvStatutJoint" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textStyle="bold" android:padding="4dp"/>
+                    </LinearLayout>
+                    <TextView android:id="@+id/tvJointRef" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="12sp" android:textColor="@color/black" android:layout_marginBottom="4dp"/>
+                    <com.adf.pvjointage.ui.EtatSelectorView android:id="@+id/selJointMatiere" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+                    <com.adf.pvjointage.ui.EtatSelectorView android:id="@+id/selJointDimension" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+                    <com.adf.pvjointage.ui.EtatSelectorView android:id="@+id/selJointAspect" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- BOULONNERIE -->
+            <androidx.cardview.widget.CardView android:layout_width="match_parent" android:layout_height="wrap_content" app:cardCornerRadius="8dp" app:cardElevation="2dp" android:layout_marginBottom="10dp">
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="12dp">
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical">
+                        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="@string/section_boulonnerie" android:textStyle="bold" android:textColor="@color/primary"/>
+                        <TextView android:id="@+id/tvStatutBoulonnerie" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textStyle="bold" android:padding="4dp"/>
+                    </LinearLayout>
+                    <TextView android:id="@+id/tvBoulonRef" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="12sp" android:textColor="@color/black" android:layout_marginBottom="4dp"/>
+                    <com.adf.pvjointage.ui.EtatSelectorView android:id="@+id/selBoulonNeuves" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+                    <com.adf.pvjointage.ui.EtatSelectorView android:id="@+id/selBoulonRondelles" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+                    <com.adf.pvjointage.ui.EtatSelectorView android:id="@+id/selBoulonEquilibrage" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+                    <com.adf.pvjointage.ui.EtatSelectorView android:id="@+id/selBoulonGraissage" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+                    <com.adf.pvjointage.ui.EtatSelectorView android:id="@+id/selBoulonLongueur" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+                    <com.adf.pvjointage.ui.EtatSelectorView android:id="@+id/selBoulonMatiere" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- ASSEMBLAGE -->
+            <androidx.cardview.widget.CardView android:layout_width="match_parent" android:layout_height="wrap_content" app:cardCornerRadius="8dp" app:cardElevation="2dp" android:layout_marginBottom="10dp">
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="12dp">
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical">
+                        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="@string/section_assemblage" android:textStyle="bold" android:textColor="@color/primary"/>
+                        <TextView android:id="@+id/tvStatutAssemblage" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textStyle="bold" android:padding="4dp"/>
+                    </LinearLayout>
+                    <com.adf.pvjointage.ui.EtatSelectorView android:id="@+id/selAssemblageParallelisme" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+                    <com.adf.pvjointage.ui.EtatSelectorView android:id="@+id/selAssemblageExcentration" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- PHOTO -->
+            <androidx.cardview.widget.CardView android:layout_width="match_parent" android:layout_height="wrap_content" app:cardCornerRadius="8dp" app:cardElevation="2dp" android:layout_marginBottom="10dp">
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="12dp">
+                    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/section_photo" android:textStyle="bold" android:textColor="@color/primary" android:layout_marginBottom="8dp"/>
+                    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Les photos sont enregistrées au niveau de l'ITEM (onglet 1-Plan)." android:textSize="12sp" android:layout_marginBottom="8dp"/>
+                    <Button
+                        android:id="@+id/btnPrendrePhoto"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/btn_prendre_photo"/>
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/rvPhotos"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginTop="8dp"
+                        android:nestedScrollingEnabled="false"/>
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <Button
+                android:id="@+id/btnEnregistrer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:backgroundTint="@color/primary"
+                android:textColor="@color/white"
+                android:text="@string/btn_enregistrer"/>
+
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>
