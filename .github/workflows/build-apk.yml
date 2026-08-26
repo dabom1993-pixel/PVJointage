@@ -5,6 +5,9 @@ on:
   push:
     branches: [ main, master ]
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -29,6 +32,29 @@ jobs:
 
       - name: Autoriser l'exécution de gradlew
         run: chmod +x gradlew
+
+      # Sans clé de signature fixe, Android Gradle Plugin en génère une nouvelle
+      # à chaque run -> l'APK ne peut plus s'installer par-dessus la version
+      # précédente (conflit de signature). On fixe donc une clé de debug stable,
+      # générée une seule fois puis réutilisée (et committée) pour tous les runs suivants.
+      - name: Générer une clé de debug stable (une seule fois)
+        run: |
+          if [ ! -f app/debug.keystore ]; then
+            keytool -genkeypair -v -keystore app/debug.keystore \
+              -storepass android -keypass android -alias androiddebugkey \
+              -keyalg RSA -keysize 2048 -validity 10000 \
+              -dname "CN=PV Jointage Debug, OU=Terrain, O=ADF, L=, S=, C=FR"
+          fi
+
+      - name: Committer la clé de debug si nouvellement générée
+        run: |
+          if [ -n "$(git status --porcelain app/debug.keystore)" ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add app/debug.keystore
+            git commit -m "Ajout de la clé de debug stable (signature APK constante entre les builds)"
+            git push
+          fi
 
       - name: Compiler l'APK (debug)
         run: ./gradlew assembleDebug --no-daemon --stacktrace

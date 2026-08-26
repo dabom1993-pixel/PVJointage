@@ -16,6 +16,21 @@ android {
         versionName = "1.0"
     }
 
+    signingConfigs {
+        // Clé de debug fixe (générée une fois par le workflow GitHub Actions et
+        // committée dans le dépôt) afin que chaque nouvelle APK puisse s'installer
+        // par-dessus la précédente sans devoir désinstaller l'app à chaque mise à jour.
+        getByName("debug") {
+            val debugKeystore = file("debug.keystore")
+            if (debugKeystore.exists()) {
+                storeFile = debugKeystore
+                storePassword = "android"
+                keyAlias = "androiddebugkey"
+                keyPassword = "android"
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
