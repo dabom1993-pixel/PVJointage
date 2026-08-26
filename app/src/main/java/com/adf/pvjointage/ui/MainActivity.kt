@@ -61,6 +61,7 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
         setSupportActionBar(binding.toolbar)
+        supportActionBar?.setDisplayShowTitleEnabled(false)
 
         binding.rvBrides.layoutManager = LinearLayoutManager(this)
         binding.rvBrides.adapter = adapter

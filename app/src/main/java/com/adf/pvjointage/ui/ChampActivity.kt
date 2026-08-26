@@ -55,6 +55,7 @@ class ChampActivity : AppCompatActivity() {
         binding = ActivityChampBinding.inflate(layoutInflater)
         setContentView(binding.root)
         setSupportActionBar(binding.toolbar)
+        supportActionBar?.setDisplayShowTitleEnabled(false)
         binding.toolbar.setNavigationOnClickListener { finish() }
 
         unite = intent.getStringExtra("unite") ?: ""
