@@ -47,7 +47,9 @@ class EtatSelectorView @JvmOverloads constructor(
     }
 
     fun setAutreVisible(visible: Boolean) {
-        btnAutre.visibility = if (visible) VISIBLE else GONE
+        // INVISIBLE (et non GONE) : la case garde sa place pour que les colonnes O / N / A
+        // restent alignées verticalement sur toutes les lignes, que "A" existe ou non.
+        btnAutre.visibility = if (visible) VISIBLE else INVISIBLE
     }
 
     fun setEtat(e: Etat, notify: Boolean = true) {
