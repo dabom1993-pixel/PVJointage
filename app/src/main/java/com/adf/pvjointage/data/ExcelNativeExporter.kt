@@ -165,14 +165,16 @@ class ExcelNativeExporter(private val context: Context) {
 
     /** Écrit [value] comme chaîne "inline" (pas besoin de toucher la table sharedStrings.xml). */
     private fun setInlineStringCell(doc: Document, row: Element, cellsByCol: MutableMap<String, Element>, colLetter: String, value: String) {
-        var cell = cellsByCol[colLetter]
-        if (cell == null) {
-            cell = doc.createElement("c")
-            cell.setAttribute("r", "$colLetter${row.getAttribute("r")}")
-            insertCellInOrder(row, cell, colLetter)
-            cellsByCol[colLetter] = cell
+        val existing = cellsByCol[colLetter]
+        val cell: Element = if (existing != null) {
+            while (existing.hasChildNodes()) existing.removeChild(existing.firstChild)
+            existing
         } else {
-            while (cell.hasChildNodes()) cell.removeChild(cell.firstChild)
+            val newCell = doc.createElement("c")
+            newCell.setAttribute("r", "$colLetter${row.getAttribute("r")}")
+            insertCellInOrder(row, newCell, colLetter)
+            cellsByCol[colLetter] = newCell
+            newCell
         }
         cell.setAttribute("t", "inlineStr")
         val isEl = doc.createElement("is")
