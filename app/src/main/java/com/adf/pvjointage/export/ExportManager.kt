@@ -64,7 +64,9 @@ class ExportManager(private val context: Context, private val repo: Repository) 
         val header = repo.getHeader().first()
         val brides = repo.getBrides(unite, famille, item).first()
         val inspections = repo.getInspectionsForItem(unite, famille, item).first().associateBy { it.rep }
-        val photos = repo.getPhotosForItem(unite, famille, item).first()
+        // Ordre chronologique (la requête de base est triée du plus récent au plus ancien
+        // pour l'affichage à l'écran ; le PDF doit lui suivre l'ordre de prise de vue).
+        val photos = repo.getPhotosForItem(unite, famille, item).first().sortedBy { it.dateAjout }
         val schema = repo.getSchemaForItem(unite, famille, item).first()
 
         val doc = PdfDocument()
