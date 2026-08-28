@@ -65,6 +65,7 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.4")
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.4")
     implementation("androidx.activity:activity-ktx:1.9.1")
+    implementation("androidx.documentfile:documentfile:1.0.1")
 
     // Room (local storage)
     implementation("androidx.room:room-runtime:2.6.1")

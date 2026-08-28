@@ -88,6 +88,12 @@ interface ItemSchemaDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(schema: ItemSchema)
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(schemas: List<ItemSchema>)
+
+    @Query("DELETE FROM item_schema")
+    suspend fun deleteAll()
+
     @Query("SELECT COUNT(*) FROM item_schema")
     suspend fun count(): Int
 }

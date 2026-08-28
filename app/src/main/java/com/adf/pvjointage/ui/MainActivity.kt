@@ -59,8 +59,21 @@ class MainActivity : AppCompatActivity() {
         })
     }
 
+    private var pendingExcelUri: Uri? = null
+
     private val pickExcelFile = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
-        if (uri != null) importFromExcel(uri)
+        if (uri != null) {
+            pendingExcelUri = uri
+            android.widget.Toast.makeText(this, R.string.import_choisir_dossier_schemas, android.widget.Toast.LENGTH_LONG).show()
+            pickSchemasFolder.launch(null)
+        }
+    }
+
+    /** Dossier des images de schémas (un fichier par ITEM) : demandé juste après le fichier Excel. */
+    private val pickSchemasFolder = registerForActivityResult(ActivityResultContracts.OpenDocumentTree()) { treeUri: Uri? ->
+        val excelUri = pendingExcelUri
+        pendingExcelUri = null
+        if (excelUri != null) importFromExcel(excelUri, treeUri)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -288,12 +301,15 @@ class MainActivity : AppCompatActivity() {
             .show()
     }
 
-    /** Lit l'onglet "1-Trame" du fichier choisi et remplace le catalogue de brides existant. */
-    private fun importFromExcel(uri: Uri) {
+    /**
+     * Lit l'onglet "1-Trame" du fichier choisi (catalogue de brides) et, si [imagesTreeUri] est
+     * fourni, le dossier d'images de schémas associé, puis remplace les données existantes.
+     */
+    private fun importFromExcel(uri: Uri, imagesTreeUri: Uri?) {
         android.widget.Toast.makeText(this, R.string.import_en_cours, android.widget.Toast.LENGTH_SHORT).show()
         lifecycleScope.launch {
             try {
-                val count = repo.importBridesFromExcel(uri)
+                val result = repo.importFromExcelAndImages(uri, imagesTreeUri)
 
                 // Le catalogue vient de changer : on repart d'une sélection vierge, la
                 // collecte déjà active (observeUnites) se rechargera automatiquement.
@@ -308,7 +324,12 @@ class MainActivity : AppCompatActivity() {
                 selectedItem = ""
                 observeUnites()
 
-                android.widget.Toast.makeText(this@MainActivity, getString(R.string.import_succes, count), android.widget.Toast.LENGTH_LONG).show()
+                val message = if (imagesTreeUri != null) {
+                    getString(R.string.import_succes_avec_schemas, result.brideCount, result.schemaCount)
+                } else {
+                    getString(R.string.import_succes, result.brideCount)
+                }
+                android.widget.Toast.makeText(this@MainActivity, message, android.widget.Toast.LENGTH_LONG).show()
             } catch (e: Exception) {
                 android.widget.Toast.makeText(this@MainActivity, getString(R.string.import_erreur, e.message ?: ""), android.widget.Toast.LENGTH_LONG).show()
             }

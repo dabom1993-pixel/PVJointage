@@ -15,23 +15,31 @@ class Repository(private val appContext: Context) {
 
     suspend fun ensureSeedData() = seedImporter.importIfNeeded()
 
+    data class ImportResult(val brideCount: Int, val schemaCount: Int)
+
     /**
      * Réimporte le catalogue des brides depuis l'onglet "1-Trame" d'un fichier Excel choisi par
-     * l'utilisateur, en écrasant le catalogue existant (brides + items dérivés). Retourne le
-     * nombre de brides importées.
+     * l'utilisateur, en écrasant le catalogue existant (brides + items dérivés). Si
+     * [imagesTreeUri] est fourni, importe aussi les schémas depuis ce dossier (une image par
+     * ITEM, nommée par son code), en écrasant les schémas existants.
      */
-    suspend fun importBridesFromExcel(uri: Uri): Int {
-        val brides = ExcelImporter(appContext).parseTrame(uri)
+    suspend fun importFromExcelAndImages(excelUri: Uri, imagesTreeUri: Uri?): ImportResult {
+        val brides = ExcelImporter(appContext).parseTrame(excelUri)
+        val items = brides.map { Triple(it.unite, it.famille, it.item) }.distinct()
+
+        val schemas = imagesTreeUri?.let { SchemaFolderImporter(appContext).importSchemas(it, items) } ?: emptyList()
+
         db.withTransaction {
             db.brideCatalogDao().deleteAll()
             db.brideCatalogDao().insertAll(brides)
             db.itemCatalogDao().deleteAll()
-            val items = brides
-                .map { ItemCatalog(unite = it.unite, famille = it.famille, item = it.item) }
-                .distinctBy { Triple(it.unite, it.famille, it.item) }
-            db.itemCatalogDao().insertAll(items)
+            db.itemCatalogDao().insertAll(items.map { ItemCatalog(unite = it.first, famille = it.second, item = it.third) })
+            if (imagesTreeUri != null) {
+                db.itemSchemaDao().deleteAll()
+                db.itemSchemaDao().insertAll(schemas)
+            }
         }
-        return brides.size
+        return ImportResult(brides.size, schemas.size)
     }
 
     // Catalogue

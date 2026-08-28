@@ -66,8 +66,10 @@
     <string name="dialog_non">NON</string>
     <string name="import_confirm_titre">Importer de nouvelles données</string>
     <string name="import_confirm_message">Êtes-vous sûr de vouloir importer de nouvelles données,\ncela va écraser le fichier existant</string>
+    <string name="import_choisir_dossier_schemas">Sélectionnez maintenant le dossier contenant les images des schémas (un fichier par ITEM)</string>
     <string name="import_en_cours">Import en cours…</string>
     <string name="import_succes">Import terminé : %1$d brides importées</string>
+    <string name="import_succes_avec_schemas">Import terminé : %1$d brides, %2$d schémas importés</string>
     <string name="import_erreur">Erreur lors de l\'import : %1$s</string>
 
     <string name="choisir_unite">Unité</string>
