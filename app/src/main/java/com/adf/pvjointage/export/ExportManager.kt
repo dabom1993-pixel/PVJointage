@@ -112,14 +112,27 @@ class ExportManager(private val context: Context, private val repo: Repository) 
         var canvas = page.canvas
         canvas.drawColor(colorBackground)
 
-        var y = drawBanner(
-            canvas, pageWidth, "PV de JOINTAGE",
-            infoLine = "Client : ${header?.client.orEmpty()}      Lieu : ${header?.lieu.orEmpty()}      Date : ${header?.date.orEmpty()}"
-        )
+        val clientLieu = listOfNotNull(
+            header?.client?.trim()?.takeIf { it.isNotEmpty() },
+            header?.lieu?.trim()?.takeIf { it.isNotEmpty() }
+        ).joinToString(" - ")
+        var y = drawBanner(canvas, pageWidth, "PV de JOINTAGE", dateText = header?.date.orEmpty(), centerText = clientLieu.ifEmpty { null })
         y += 10f
 
-        val boldInfoPaint = Paint().apply { textSize = 10.5f; color = Color.BLACK; isFakeBoldText = true }
-        canvas.drawText("Unité : $unite      Type d'équipement : $famille      ITEM : $item", leftX, y, boldInfoPaint)
+        // Libellés en petit, valeurs en légèrement plus grand (et gras) juste après.
+        val labelPaint = Paint().apply { textSize = 9.5f; color = Color.BLACK }
+        val valuePaint = Paint().apply { textSize = 11f; color = Color.BLACK; isFakeBoldText = true }
+        var cursorX = leftX
+        fun drawSeg(text: String, paint: Paint) {
+            canvas.drawText(text, cursorX, y, paint)
+            cursorX += paint.measureText(text)
+        }
+        drawSeg("Unité : ", labelPaint)
+        drawSeg(unite, valuePaint)
+        drawSeg("      Type d'équipement : ", labelPaint)
+        drawSeg(famille, valuePaint)
+        drawSeg("      ITEM : ", labelPaint)
+        drawSeg(item, valuePaint)
         y += 14f
 
         // Schéma sur la moitié droite (une seule fois, sur la première page).
@@ -273,35 +286,45 @@ class ExportManager(private val context: Context, private val repo: Repository) 
     // ---------------------------------------------------------------------
 
     /**
-     * Bandeau bleu du haut (logo + titre, écriture blanche façon "PV de JOINTAGE").
-     * Si [infoLine] est fourni (page de garde), il est affiché sur une 2e ligne, même style
-     * que le titre. Sinon, [dateText] (pages de détail bride) s'affiche seule en haut à droite.
+     * Bandeau bleu du haut, tout sur une seule ligne : logo + titre à gauche, [centerText]
+     * centré (si fourni, police légèrement plus grande que le titre, ex. Client - Lieu),
+     * [dateText] à droite. Le logo est centré verticalement dans le bandeau.
      * Retourne l'ordonnée Y juste sous le bandeau.
      */
-    private fun drawBanner(canvas: Canvas, pageWidth: Int, title: String, dateText: String = "", infoLine: String? = null): Float {
-        val bannerHeight = if (infoLine != null) 62f else 44f
+    private fun drawBanner(canvas: Canvas, pageWidth: Int, title: String, dateText: String = "", centerText: String? = null): Float {
+        val bannerHeight = 44f
         canvas.drawRect(0f, 0f, pageWidth.toFloat(), bannerHeight, Paint().apply { color = colorPrimary })
         var textStartX = 16f
         logoBitmap?.let { bmp ->
             val logoH = 28f
             val logoW = logoH * bmp.width / bmp.height
-            val cardRect = RectF(12f, 8f, 12f + logoW + 8f, 8f + logoH + 8f)
+            val cardH = logoH + 8f
+            val cardTop = (bannerHeight - cardH) / 2f
+            val cardRect = RectF(12f, cardTop, 12f + logoW + 8f, cardTop + cardH)
             canvas.drawRoundRect(cardRect, 4f, 4f, Paint().apply { color = Color.WHITE })
             canvas.drawBitmap(bmp, null, RectF(cardRect.left + 4f, cardRect.top + 4f, cardRect.right - 4f, cardRect.bottom - 4f), null)
             textStartX = cardRect.right + 10f
         }
-        val titlePaint = Paint().apply { color = Color.WHITE; textSize = 15f; isFakeBoldText = true }
-        canvas.drawText(title, textStartX, 26f, titlePaint)
-        if (infoLine != null) {
-            // Même style d'écriture que le titre (blanc, gras), sur la 2e ligne du bandeau.
-            val infoPaint = Paint().apply { color = Color.WHITE; textSize = 12f; isFakeBoldText = true }
-            canvas.drawText(infoLine, textStartX, 46f, infoPaint)
+        val titleSize = 15f
+        val titlePaint = Paint().apply { color = Color.WHITE; textSize = titleSize; isFakeBoldText = true }
+        canvas.drawText(title, textStartX, verticalBaseline(bannerHeight, titlePaint), titlePaint)
+
+        if (!centerText.isNullOrEmpty()) {
+            // Police légèrement plus grande que le titre, pas de libellé ("Client - Lieu" brut).
+            val centerPaint = Paint().apply { color = Color.WHITE; textSize = titleSize + 2f; isFakeBoldText = true; textAlign = Paint.Align.CENTER }
+            canvas.drawText(centerText, pageWidth / 2f, verticalBaseline(bannerHeight, centerPaint), centerPaint)
         }
         if (dateText.isNotEmpty()) {
             val datePaint = Paint().apply { color = Color.WHITE; textSize = 10f; textAlign = Paint.Align.RIGHT }
-            canvas.drawText("Date : $dateText", pageWidth - 16f, bannerHeight / 2 + 4f, datePaint)
+            canvas.drawText("Date : $dateText", pageWidth - 16f, verticalBaseline(bannerHeight, datePaint), datePaint)
         }
         return bannerHeight
+    }
+
+    /** Ordonnée de la ligne de base pour centrer verticalement du texte dans une bande de hauteur [height]. */
+    private fun verticalBaseline(height: Float, paint: Paint): Float {
+        val fm = paint.fontMetrics
+        return height / 2f - (fm.ascent + fm.descent) / 2f
     }
 
     private fun drawSectionBar(canvas: Canvas, x: Float, y: Float, width: Float, title: String): Float {
@@ -332,21 +355,18 @@ class ExportManager(private val context: Context, private val repo: Repository) 
         canvas.drawText(field.second, boxRect.centerX(), boxRect.centerY() - (fm.ascent + fm.descent) / 2, valuePaint)
     }
 
-    /** Une ligne de 2 à 3 valeurs de référence en boîte bleu clair (DN/PN/Matière, Rondelle/Matière...). */
+    /**
+     * Une ligne de 2 à 3 valeurs de référence en boîte bleu clair (DN/PN/Matière, Rondelle/Matière...),
+     * libellé et boîte côte à côte sur la même ligne — même principe que LOCALISATION.
+     */
     private fun drawRefBoxRow(canvas: Canvas, x: Float, y: Float, width: Float, fields: List<Pair<String, String>>): Float {
-        val rowHeight = 22f
+        val rowHeight = 19f
         val colWidth = width / fields.size
-        fields.forEachIndexed { i, (label, value) ->
+        fields.forEachIndexed { i, field ->
             val colX = x + i * colWidth
-            val labelPaint = Paint().apply { color = Color.DKGRAY; textSize = 8.5f }
-            canvas.drawText(label, colX, y + 9f, labelPaint)
-            val boxRect = RectF(colX, y + 11f, colX + colWidth - 8f, y + rowHeight)
-            canvas.drawRect(boxRect, Paint().apply { color = colorValueBox })
-            val valuePaint = Paint().apply { color = Color.BLACK; textSize = 8.5f; textAlign = Paint.Align.CENTER }
-            val fm = valuePaint.fontMetrics
-            canvas.drawText(value, boxRect.centerX(), boxRect.centerY() - (fm.ascent + fm.descent) / 2, valuePaint)
+            drawInfoField(canvas, colX, colX + 46f, colWidth - 52f, y, rowHeight, field)
         }
-        return y + rowHeight + 3f
+        return y + rowHeight
     }
 
     /** Deux lignes de contrôle côte à côte (OUI vert / NON rouge / — gris), comme sur le modèle B-Champ. */
