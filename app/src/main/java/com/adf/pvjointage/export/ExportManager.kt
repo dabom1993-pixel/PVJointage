@@ -35,11 +35,13 @@ import java.io.FileOutputStream
  */
 class ExportManager(private val context: Context, private val repo: Repository) {
 
-    private val colorPrimary = Color.parseColor("#0B5394")
+    // Bleu identique à celui du logo Groupe ADF (échantillonné dans logo_adf.png).
+    private val colorPrimary = Color.parseColor("#203760")
     private val colorConforme = Color.parseColor("#2E7D32")
     private val colorNonConforme = Color.parseColor("#C62828")
     private val colorEnAttente = Color.parseColor("#9E9E9E")
     private val colorBackground = Color.parseColor("#F4F6F8")
+    private val colorValueBox = Color.parseColor("#D3DCE8")
 
     private val logoBitmap: Bitmap? by lazy {
         try {
@@ -155,13 +157,14 @@ class ExportManager(private val context: Context, private val repo: Repository) 
         var canvas = page.canvas
         canvas.drawColor(colorBackground)
 
-        drawBanner(canvas, pageWidth, "PV de JOINTAGE")
+        var y = drawBanner(
+            canvas, pageWidth, "PV de JOINTAGE",
+            infoLine = "Client : ${header?.client.orEmpty()}      Lieu : ${header?.lieu.orEmpty()}      Date : ${header?.date.orEmpty()}"
+        )
+        y += 10f
 
-        val infoPaint = Paint().apply { textSize = 10f; color = Color.BLACK }
-        var y = 64f
-        canvas.drawText("Client : ${header?.client.orEmpty()}      Lieu : ${header?.lieu.orEmpty()}      Date : ${header?.date.orEmpty()}", leftX, y, infoPaint)
-        y += 16f
-        canvas.drawText("Unité : $unite      Type d'équipement : $famille      ITEM : $item", leftX, y, infoPaint)
+        val boldInfoPaint = Paint().apply { textSize = 10.5f; color = Color.BLACK; isFakeBoldText = true }
+        canvas.drawText("Unité : $unite      Type d'équipement : $famille      ITEM : $item", leftX, y, boldInfoPaint)
         y += 14f
 
         // Schéma sur la moitié droite (une seule fois, sur la première page).
@@ -210,8 +213,8 @@ class ExportManager(private val context: Context, private val repo: Repository) 
                 page = doc.startPage(PdfDocument.PageInfo.Builder(pageWidth, pageHeight, ++pageNumber).create())
                 canvas = page.canvas
                 canvas.drawColor(colorBackground)
-                drawBanner(canvas, pageWidth, "PV de JOINTAGE — suite")
-                tableY = drawTableHeader(canvas, 60f)
+                val bannerBottom = drawBanner(canvas, pageWidth, "PV de JOINTAGE — suite")
+                tableY = drawTableHeader(canvas, bannerBottom + 16f)
             }
             val insp = inspections[b.rep]
             val (etiquette, joint, boulonnerie, assemblage, global) = conformites(insp)
@@ -266,45 +269,41 @@ class ExportManager(private val context: Context, private val repo: Repository) 
         val marginX = 24f
         val contentWidth = pageWidth - marginX * 2
 
-        drawBanner(canvas, pageWidth, "PV de JOINTAGE — DÉTAIL DE LA BRIDE", header?.date.orEmpty())
-        var y = 64f
+        var y = drawBanner(canvas, pageWidth, "PV de JOINTAGE — DÉTAIL DE LA BRIDE", dateText = header?.date.orEmpty())
+        y += 10f
+
+        val repereBride = if (bride.designation.isNotBlank()) "${bride.rep} - ${bride.designation}" else bride.rep
 
         // LOCALISATION
         y = drawSectionBar(canvas, marginX, y, contentWidth, "LOCALISATION")
         y = drawInfoRow(canvas, marginX, y, contentWidth, "Client" to header?.client.orEmpty(), "Type d'équipement" to famille)
         y = drawInfoRow(canvas, marginX, y, contentWidth, "Lieu" to header?.lieu.orEmpty(), "ITEM" to item)
-        y = drawInfoRow(canvas, marginX, y, contentWidth, "Unité" to unite, "Repère de la bride" to bride.rep)
+        y = drawInfoRow(canvas, marginX, y, contentWidth, "Unité" to unite, "Repère de la bride" to repereBride)
         y += 8f
 
         // ETIQUETTE
         y = drawSectionBar(canvas, marginX, y, contentWidth, "ETIQUETTE")
-        y = drawEtatRow(canvas, marginX, y, contentWidth, "Etiquette mise et serrée", insp?.etiMiseSerree)
-        y = drawEtatRow(canvas, marginX, y, contentWidth, "Nom (numéro GTIS) + Date lisible", insp?.etiNomDateLisible)
+        y = drawTwoEtatRow(canvas, marginX, y, contentWidth, "Etiquette mise et serrée", insp?.etiMiseSerree, "Nom (numéro GTIS) + Date lisible", insp?.etiNomDateLisible)
         y += 8f
 
         // JOINT
         y = drawSectionBar(canvas, marginX, y, contentWidth, "JOINT")
-        y = drawInfoRow(canvas, marginX, y, contentWidth, "DN" to bride.dn, "PN" to bride.pn)
-        y = drawInfoRow(canvas, marginX, y, contentWidth, "Matière" to bride.matiereJoint, "Rondelle" to bride.rondelle)
-        y = drawEtatRow(canvas, marginX, y, contentWidth, "Matière conforme au plan/spec", insp?.jointMatiereConforme)
-        y = drawEtatRow(canvas, marginX, y, contentWidth, "Dimension & centrage", insp?.jointDimensionCentrage)
-        y = drawEtatRow(canvas, marginX, y, contentWidth, "Aspect du joint neuf", insp?.jointAspectNeuf)
+        y = drawRefBoxRow(canvas, marginX, y, contentWidth, listOf("DN" to bride.dn, "PN" to bride.pn, "Matière" to bride.matiereJoint))
+        y = drawTwoEtatRow(canvas, marginX, y, contentWidth, "Matière conforme au plan/spec", insp?.jointMatiereConforme, "Dimension & centrage", insp?.jointDimensionCentrage)
+        y = drawTwoEtatRow(canvas, marginX, y, contentWidth, "Aspect du joint neuf", insp?.jointAspectNeuf, null, null)
         y += 8f
 
         // BOULONNERIE
         y = drawSectionBar(canvas, marginX, y, contentWidth, "BOULONNERIE")
-        y = drawInfoRow(canvas, marginX, y, contentWidth, "Matière" to bride.matiereBoulon, "" to "")
-        y = drawEtatRow(canvas, marginX, y, contentWidth, "Neuves", insp?.boulonNeuves)
-        y = drawEtatRow(canvas, marginX, y, contentWidth, "Rondelles", insp?.boulonRondelles)
-        y = drawEtatRow(canvas, marginX, y, contentWidth, "Equilibrage", insp?.boulonEquilibrage)
-        y = drawEtatRow(canvas, marginX, y, contentWidth, "Graissage", insp?.boulonGraissage)
-        y = drawEtatRow(canvas, marginX, y, contentWidth, "Longueur / Diamètre", insp?.boulonLongueurDiametre)
+        y = drawRefBoxRow(canvas, marginX, y, contentWidth, listOf("Rondelle" to bride.rondelle, "Matière" to bride.matiereBoulon))
+        y = drawTwoEtatRow(canvas, marginX, y, contentWidth, "Neuves", insp?.boulonNeuves, "Rondelles", insp?.boulonRondelles)
+        y = drawTwoEtatRow(canvas, marginX, y, contentWidth, "Equilibrage", insp?.boulonEquilibrage, "Graissage", insp?.boulonGraissage)
+        y = drawTwoEtatRow(canvas, marginX, y, contentWidth, "Longueur / Diamètre", insp?.boulonLongueurDiametre, "Matière", insp?.boulonMatiere)
         y += 8f
 
         // ASSEMBLAGE
         y = drawSectionBar(canvas, marginX, y, contentWidth, "ASSEMBLAGE")
-        y = drawEtatRow(canvas, marginX, y, contentWidth, "Parallélisme", insp?.assemblageParallelisme)
-        y = drawEtatRow(canvas, marginX, y, contentWidth, "Excentration", insp?.assemblageExcentration)
+        y = drawTwoEtatRow(canvas, marginX, y, contentWidth, "Parallélisme", insp?.assemblageParallelisme, "Excentration", insp?.assemblageExcentration)
         y += 10f
 
         // PHOTOS
@@ -318,8 +317,14 @@ class ExportManager(private val context: Context, private val repo: Repository) 
     // Petits utilitaires de dessin
     // ---------------------------------------------------------------------
 
-    private fun drawBanner(canvas: Canvas, pageWidth: Int, title: String, dateText: String = "") {
-        val bannerHeight = 44f
+    /**
+     * Bandeau bleu du haut (logo + titre, écriture blanche façon "PV de JOINTAGE").
+     * Si [infoLine] est fourni (page de garde), il est affiché sur une 2e ligne, même style
+     * que le titre. Sinon, [dateText] (pages de détail bride) s'affiche seule en haut à droite.
+     * Retourne l'ordonnée Y juste sous le bandeau.
+     */
+    private fun drawBanner(canvas: Canvas, pageWidth: Int, title: String, dateText: String = "", infoLine: String? = null): Float {
+        val bannerHeight = if (infoLine != null) 62f else 44f
         canvas.drawRect(0f, 0f, pageWidth.toFloat(), bannerHeight, Paint().apply { color = colorPrimary })
         var textStartX = 16f
         logoBitmap?.let { bmp ->
@@ -331,11 +336,17 @@ class ExportManager(private val context: Context, private val repo: Repository) 
             textStartX = cardRect.right + 10f
         }
         val titlePaint = Paint().apply { color = Color.WHITE; textSize = 15f; isFakeBoldText = true }
-        canvas.drawText(title, textStartX, bannerHeight / 2 + 5f, titlePaint)
+        canvas.drawText(title, textStartX, 26f, titlePaint)
+        if (infoLine != null) {
+            // Même style d'écriture que le titre (blanc, gras), sur la 2e ligne du bandeau.
+            val infoPaint = Paint().apply { color = Color.WHITE; textSize = 12f; isFakeBoldText = true }
+            canvas.drawText(infoLine, textStartX, 46f, infoPaint)
+        }
         if (dateText.isNotEmpty()) {
             val datePaint = Paint().apply { color = Color.WHITE; textSize = 10f; textAlign = Paint.Align.RIGHT }
             canvas.drawText("Date : $dateText", pageWidth - 16f, bannerHeight / 2 + 4f, datePaint)
         }
+        return bannerHeight
     }
 
     private fun drawSectionBar(canvas: Canvas, x: Float, y: Float, width: Float, title: String): Float {
@@ -346,30 +357,58 @@ class ExportManager(private val context: Context, private val repo: Repository) 
         return y + barHeight
     }
 
-    /** Une ligne "label : valeur" sur deux colonnes (utilisée pour LOCALISATION / DN-PN / etc.). */
+    /** Une ligne "label [boîte bleu clair : valeur]" sur deux colonnes (LOCALISATION notamment). */
     private fun drawInfoRow(canvas: Canvas, x: Float, y: Float, width: Float, left: Pair<String, String>, right: Pair<String, String>): Float {
-        val rowHeight = 18f
+        val rowHeight = 19f
         val half = width / 2
-        val labelPaint = Paint().apply { color = Color.DKGRAY; textSize = 9f }
-        val valuePaint = Paint().apply { color = Color.BLACK; textSize = 9.5f; isFakeBoldText = true }
-        if (left.first.isNotEmpty()) {
-            canvas.drawText(left.first, x, y + rowHeight - 5f, labelPaint)
-            canvas.drawText(left.second, x + 110f, y + rowHeight - 5f, valuePaint)
-        }
-        if (right.first.isNotEmpty()) {
-            canvas.drawText(right.first, x + half, y + rowHeight - 5f, labelPaint)
-            canvas.drawText(right.second, x + half + 130f, y + rowHeight - 5f, valuePaint)
-        }
+        drawInfoField(canvas, x, x + 90f, half - 96f, y, rowHeight, left)
+        drawInfoField(canvas, x + half, x + half + 110f, width - half - 110f, y, rowHeight, right)
         return y + rowHeight
+    }
+
+    private fun drawInfoField(canvas: Canvas, labelX: Float, boxX: Float, boxWidth: Float, y: Float, rowHeight: Float, field: Pair<String, String>) {
+        if (field.first.isEmpty() || boxWidth <= 0f) return
+        val labelPaint = Paint().apply { color = Color.BLACK; textSize = 9f }
+        canvas.drawText(field.first, labelX, y + rowHeight - 6f, labelPaint)
+        val boxRect = RectF(boxX, y + 2f, boxX + boxWidth, y + rowHeight - 2f)
+        canvas.drawRect(boxRect, Paint().apply { color = colorValueBox })
+        val valuePaint = Paint().apply { color = Color.BLACK; textSize = 9f; textAlign = Paint.Align.CENTER }
+        val fm = valuePaint.fontMetrics
+        canvas.drawText(field.second, boxRect.centerX(), boxRect.centerY() - (fm.ascent + fm.descent) / 2, valuePaint)
+    }
+
+    /** Une ligne de 2 à 3 valeurs de référence en boîte bleu clair (DN/PN/Matière, Rondelle/Matière...). */
+    private fun drawRefBoxRow(canvas: Canvas, x: Float, y: Float, width: Float, fields: List<Pair<String, String>>): Float {
+        val rowHeight = 22f
+        val colWidth = width / fields.size
+        fields.forEachIndexed { i, (label, value) ->
+            val colX = x + i * colWidth
+            val labelPaint = Paint().apply { color = Color.DKGRAY; textSize = 8.5f }
+            canvas.drawText(label, colX, y + 9f, labelPaint)
+            val boxRect = RectF(colX, y + 11f, colX + colWidth - 8f, y + rowHeight)
+            canvas.drawRect(boxRect, Paint().apply { color = colorValueBox })
+            val valuePaint = Paint().apply { color = Color.BLACK; textSize = 8.5f; textAlign = Paint.Align.CENTER }
+            val fm = valuePaint.fontMetrics
+            canvas.drawText(value, boxRect.centerX(), boxRect.centerY() - (fm.ascent + fm.descent) / 2, valuePaint)
+        }
+        return y + rowHeight + 3f
+    }
+
+    /** Deux lignes de contrôle côte à côte (OUI vert / NON rouge / — gris), comme sur le modèle B-Champ. */
+    private fun drawTwoEtatRow(canvas: Canvas, x: Float, y: Float, width: Float, leftLabel: String, leftCode: String?, rightLabel: String?, rightCode: String?): Float {
+        val half = width / 2
+        val bottomLeft = drawEtatRow(canvas, x, y, half - 6f, leftLabel, leftCode)
+        val bottomRight = if (rightLabel != null) drawEtatRow(canvas, x + half + 6f, y, half - 6f, rightLabel, rightCode) else bottomLeft
+        return maxOf(bottomLeft, bottomRight)
     }
 
     /** Une ligne de contrôle "libellé ................ [OUI/NON/A]" avec pastille colorée. */
     private fun drawEtatRow(canvas: Canvas, x: Float, y: Float, width: Float, label: String, code: String?): Float {
         val rowHeight = 17f
-        val labelPaint = Paint().apply { color = Color.BLACK; textSize = 9.5f }
+        val labelPaint = Paint().apply { color = Color.BLACK; textSize = 9f }
         canvas.drawText(label, x, y + rowHeight - 5f, labelPaint)
 
-        val pillWidth = 60f
+        val pillWidth = 50f
         val pillRect = RectF(x + width - pillWidth, y + 2f, x + width, y + rowHeight - 2f)
         val (bg, text) = when (code) {
             "O" -> colorConforme to "OUI"
@@ -378,7 +417,7 @@ class ExportManager(private val context: Context, private val repo: Repository) 
             else -> colorEnAttente to "—"
         }
         canvas.drawRoundRect(pillRect, 3f, 3f, Paint().apply { color = bg })
-        val textPaint = Paint().apply { color = Color.WHITE; textSize = 9f; isFakeBoldText = true; textAlign = Paint.Align.CENTER }
+        val textPaint = Paint().apply { color = Color.WHITE; textSize = 8.5f; isFakeBoldText = true; textAlign = Paint.Align.CENTER }
         val fm = textPaint.fontMetrics
         canvas.drawText(text, pillRect.centerX(), pillRect.centerY() - (fm.ascent + fm.descent) / 2, textPaint)
 
