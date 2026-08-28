@@ -60,6 +60,15 @@
     <string name="btn_terrain">B-Champ</string>
     <string name="btn_prendre_photo">Prendre une photo</string>
     <string name="btn_export">Exporter</string>
+    <string name="btn_import">Importer</string>
+
+    <string name="dialog_oui">OUI</string>
+    <string name="dialog_non">NON</string>
+    <string name="import_confirm_titre">Importer de nouvelles données</string>
+    <string name="import_confirm_message">Êtes-vous sûr de vouloir importer de nouvelles données,\ncela va écraser le fichier existant</string>
+    <string name="import_en_cours">Import en cours…</string>
+    <string name="import_succes">Import terminé : %1$d brides importées</string>
+    <string name="import_erreur">Erreur lors de l\'import : %1$s</string>
 
     <string name="choisir_unite">Unité</string>
     <string name="choisir_type">Type d\'équipement</string>

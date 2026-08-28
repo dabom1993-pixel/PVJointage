@@ -13,6 +13,9 @@ interface ItemCatalogDao {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertAll(items: List<ItemCatalog>)
 
+    @Query("DELETE FROM item_catalog")
+    suspend fun deleteAll()
+
     @Query("SELECT COUNT(*) FROM item_catalog")
     suspend fun count(): Int
 
@@ -30,6 +33,9 @@ interface ItemCatalogDao {
 interface BrideCatalogDao {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertAll(brides: List<BrideCatalog>)
+
+    @Query("DELETE FROM bride_catalog")
+    suspend fun deleteAll()
 
     @Query("SELECT COUNT(*) FROM bride_catalog")
     suspend fun count(): Int

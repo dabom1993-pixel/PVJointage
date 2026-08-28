@@ -2,6 +2,7 @@ package com.adf.pvjointage.ui
 
 import android.app.Dialog
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.view.GestureDetector
 import android.view.Menu
@@ -10,6 +11,8 @@ import android.view.MotionEvent
 import android.view.View
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -54,6 +57,10 @@ class MainActivity : AppCompatActivity() {
                 return true
             }
         })
+    }
+
+    private val pickExcelFile = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
+        if (uri != null) importFromExcel(uri)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -101,8 +108,11 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private var unitesJob: kotlinx.coroutines.Job? = null
+
     private fun observeUnites() {
-        lifecycleScope.launch {
+        unitesJob?.cancel()
+        unitesJob = lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 repo.getUnites().collect { unites ->
                     populateSpinner(binding.spUnite, unites, selectedUnite) { chosen ->
@@ -242,6 +252,10 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        if (item.itemId == R.id.action_import) {
+            confirmImport()
+            return true
+        }
         if (item.itemId == R.id.action_export) {
             if (selectedUnite.isBlank() || selectedItem.isBlank()) return true
             val options = arrayOf("Export CSV (compatible Excel)", "Export PDF (avec photos)")
@@ -262,5 +276,42 @@ class MainActivity : AppCompatActivity() {
             return true
         }
         return super.onOptionsItemSelected(item)
+    }
+
+    /** Affiche la confirmation OUI/NON puis, si OUI, ouvre le sélecteur de fichier Excel. */
+    private fun confirmImport() {
+        AlertDialog.Builder(this)
+            .setTitle(R.string.import_confirm_titre)
+            .setMessage(R.string.import_confirm_message)
+            .setPositiveButton(R.string.dialog_oui) { _, _ -> pickExcelFile.launch(arrayOf("*/*")) }
+            .setNegativeButton(R.string.dialog_non, null)
+            .show()
+    }
+
+    /** Lit l'onglet "1-Trame" du fichier choisi et remplace le catalogue de brides existant. */
+    private fun importFromExcel(uri: Uri) {
+        android.widget.Toast.makeText(this, R.string.import_en_cours, android.widget.Toast.LENGTH_SHORT).show()
+        lifecycleScope.launch {
+            try {
+                val count = repo.importBridesFromExcel(uri)
+
+                // Le catalogue vient de changer : on repart d'une sélection vierge, la
+                // collecte déjà active (observeUnites) se rechargera automatiquement.
+                bridesJob?.cancel()
+                schemaJob?.cancel()
+                adapter.submit(emptyList())
+                currentSchemaFile = null
+                binding.imgSchema.visibility = View.GONE
+                binding.emptySchemaLayout.visibility = View.VISIBLE
+                selectedUnite = ""
+                selectedFamille = ""
+                selectedItem = ""
+                observeUnites()
+
+                android.widget.Toast.makeText(this@MainActivity, getString(R.string.import_succes, count), android.widget.Toast.LENGTH_LONG).show()
+            } catch (e: Exception) {
+                android.widget.Toast.makeText(this@MainActivity, getString(R.string.import_erreur, e.message ?: ""), android.widget.Toast.LENGTH_LONG).show()
+            }
+        }
     }
 }

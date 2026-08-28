@@ -1,17 +1,38 @@
 package com.adf.pvjointage.data
 
 import android.content.Context
+import android.net.Uri
+import androidx.room.withTransaction
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-class Repository(context: Context) {
-    private val db = AppDatabase.getInstance(context)
-    private val seedImporter = SeedImporter(context.applicationContext, db)
+class Repository(private val appContext: Context) {
+    private val db = AppDatabase.getInstance(appContext)
+    private val seedImporter = SeedImporter(appContext.applicationContext, db)
 
     suspend fun ensureSeedData() = seedImporter.importIfNeeded()
+
+    /**
+     * Réimporte le catalogue des brides depuis l'onglet "1-Trame" d'un fichier Excel choisi par
+     * l'utilisateur, en écrasant le catalogue existant (brides + items dérivés). Retourne le
+     * nombre de brides importées.
+     */
+    suspend fun importBridesFromExcel(uri: Uri): Int {
+        val brides = ExcelImporter(appContext).parseTrame(uri)
+        db.withTransaction {
+            db.brideCatalogDao().deleteAll()
+            db.brideCatalogDao().insertAll(brides)
+            db.itemCatalogDao().deleteAll()
+            val items = brides
+                .map { ItemCatalog(unite = it.unite, famille = it.famille, item = it.item) }
+                .distinctBy { Triple(it.unite, it.famille, it.item) }
+            db.itemCatalogDao().insertAll(items)
+        }
+        return brides.size
+    }
 
     // Catalogue
     fun getUnites(): Flow<List<String>> = db.itemCatalogDao().getUnites()
