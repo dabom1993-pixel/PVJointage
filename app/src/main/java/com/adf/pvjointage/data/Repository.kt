@@ -85,6 +85,10 @@ class Repository(private val appContext: Context) {
     fun getPhotosForItem(unite: String, famille: String, item: String): Flow<List<Photo>> =
         db.photoDao().getForItem(unite, famille, item)
 
+    /** Photos de la bride uniquement (une bride ne doit jamais voir les photos d'une autre bride du même item). */
+    fun getPhotosForBride(unite: String, famille: String, item: String, rep: String): Flow<List<Photo>> =
+        db.photoDao().getForBride(unite, famille, item, rep)
+
     suspend fun addPhoto(photo: Photo): Long {
         val id = db.photoDao().insert(photo)
         touchDate()

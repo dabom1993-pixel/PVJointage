@@ -73,6 +73,9 @@ interface PhotoDao {
     @Query("SELECT * FROM photo WHERE unite = :unite AND famille = :famille AND item = :item ORDER BY dateAjout DESC")
     fun getForItem(unite: String, famille: String, item: String): Flow<List<Photo>>
 
+    @Query("SELECT * FROM photo WHERE unite = :unite AND famille = :famille AND item = :item AND rep = :rep ORDER BY dateAjout DESC")
+    fun getForBride(unite: String, famille: String, item: String, rep: String): Flow<List<Photo>>
+
     @Insert
     suspend fun insert(photo: Photo): Long
 

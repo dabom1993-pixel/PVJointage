@@ -172,7 +172,7 @@ class ChampActivity : AppCompatActivity() {
         binding.rvPhotos.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
         binding.rvPhotos.adapter = photoAdapter
         lifecycleScope.launch {
-            repo.getPhotosForItem(unite, famille, item).collect { photos -> photoAdapter.submit(photos) }
+            repo.getPhotosForBride(unite, famille, item, rep).collect { photos -> photoAdapter.submit(photos) }
         }
     }
 

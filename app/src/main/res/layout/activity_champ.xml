@@ -128,7 +128,7 @@
             <androidx.cardview.widget.CardView android:layout_width="match_parent" android:layout_height="wrap_content" app:cardCornerRadius="8dp" app:cardElevation="2dp" android:layout_marginBottom="10dp">
                 <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="12dp">
                     <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/section_photo" android:textStyle="bold" android:textColor="@color/primary" android:layout_marginBottom="8dp"/>
-                    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Les photos sont enregistrées au niveau de l'ITEM (onglet 1-Plan)." android:textSize="12sp" android:layout_marginBottom="8dp"/>
+                    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Les photos sont propres à cette bride (repère)." android:textSize="12sp" android:layout_marginBottom="8dp"/>
                     <Button
                         android:id="@+id/btnPrendrePhoto"
                         style="@style/Widget.MaterialComponents.Button.OutlinedButton"
