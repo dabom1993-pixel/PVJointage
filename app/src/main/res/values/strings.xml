@@ -81,6 +81,7 @@
     <string name="statut_attente">EN ATTENTE</string>
 
     <string name="export_done">Export terminé : %1$s</string>
+    <string name="export_erreur">Erreur lors de l\'export : %1$s</string>
     <string name="aucune_photo">Aucune photo pour cet item</string>
     <string name="supprimer">Supprimer</string>
 

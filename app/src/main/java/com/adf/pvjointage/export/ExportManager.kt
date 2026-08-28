@@ -24,9 +24,8 @@ import java.io.File
 import java.io.FileOutputStream
 
 /**
- * Génère les exports du PV.
- * - CSV : reproduit la structure de l'onglet "1-Trame" (colonnes A à W, compatible Excel),
- *   colonnes K à W renseignées avec les contrôles saisis sur la tablette.
+ * Génère l'export PDF du PV (l'export Excel "natif" est géré séparément par
+ * [com.adf.pvjointage.data.ExcelNativeExporter], appelé depuis [Repository.exportNativeExcel]).
  * - PDF : un fichier par ITEM — 1ère page = affiche de l'écran principal (A4 paysage),
  *   pages suivantes = détail de chaque bride façon "B-Champ" (A4 portrait, photos en bas,
  *   4 photos maximum au total pour l'item).
@@ -55,50 +54,6 @@ class ExportManager(private val context: Context, private val repo: Repository) 
         val dir = File(context.getExternalFilesDir(null), "exports")
         dir.mkdirs()
         return dir
-    }
-
-    // ---------------------------------------------------------------------
-    // CSV — reproduit l'onglet "1-Trame" (A..W) : catalogue + contrôles bride
-    // ---------------------------------------------------------------------
-
-    suspend fun exportCsv(unite: String, famille: String, item: String): String {
-        val header = repo.getHeader().first()
-        val brides = repo.getBrides(unite, famille, item).first()
-        val inspections = repo.getInspectionsForItem(unite, famille, item).first().associateBy { it.rep }
-
-        val fileName = "PV_${item}_${System.currentTimeMillis()}.csv"
-        val file = File(exportDir(), fileName)
-
-        file.bufferedWriter(Charsets.UTF_8).use { w ->
-            w.write("PV DE JOINTAGE\r\n")
-            w.write("Client;${header?.client.orEmpty()}\r\n")
-            w.write("Lieu;${header?.lieu.orEmpty()}\r\n")
-            w.write("Date;${header?.date.orEmpty()}\r\n")
-            w.write("Unité;$unite\r\n")
-            w.write("Type d'équipement;$famille\r\n")
-            w.write("ITEM;$item\r\n")
-            w.write("\r\n")
-            w.write(
-                "Unité;Famille;Item;Rep.;Désignation;DN;PN;MatièreJ;Rondelle;MatièreB;" +
-                    "Mise;Nom;MatJ;Dim;Visu;Neuve;Rond;Equi;Grais;LgDiam;MatB;Para;Exc;E;J;B;A;Conf\r\n"
-            )
-
-            for (b in brides) {
-                val insp = inspections[b.rep]
-                val (etiquette, joint, boulonnerie, assemblage, global) = conformites(insp)
-
-                w.write(
-                    "$unite;$famille;$item;${b.rep};${b.designation};${b.dn};${b.pn};${b.matiereJoint};${b.rondelle};${b.matiereBoulon};" +
-                        "${insp?.etiMiseSerree.orEmpty()};${insp?.etiNomDateLisible.orEmpty()};" +
-                        "${insp?.jointMatiereConforme.orEmpty()};${insp?.jointDimensionCentrage.orEmpty()};${insp?.jointAspectNeuf.orEmpty()};" +
-                        "${insp?.boulonNeuves.orEmpty()};${insp?.boulonRondelles.orEmpty()};${insp?.boulonEquilibrage.orEmpty()};" +
-                        "${insp?.boulonGraissage.orEmpty()};${insp?.boulonLongueurDiametre.orEmpty()};${insp?.boulonMatiere.orEmpty()};" +
-                        "${insp?.assemblageParallelisme.orEmpty()};${insp?.assemblageExcentration.orEmpty()};" +
-                        "${label(etiquette)};${label(joint)};${label(boulonnerie)};${label(assemblage)};${label(global)}\r\n"
-                )
-            }
-        }
-        return file.absolutePath
     }
 
     // ---------------------------------------------------------------------
@@ -531,11 +486,5 @@ class ExportManager(private val context: Context, private val repo: Repository) 
         )
         val global = ConformiteCalculator.global(etiquette, joint, boulonnerie, assemblage)
         return Conformites(etiquette, joint, boulonnerie, assemblage, global)
-    }
-
-    private fun label(c: Conformite): String = when (c) {
-        Conformite.CONFORME -> "CONFORME"
-        Conformite.NON_CONFORME -> "NON CONFORME"
-        Conformite.EN_ATTENTE -> "EN ATTENTE"
     }
 }

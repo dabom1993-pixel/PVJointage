@@ -269,19 +269,25 @@ class MainActivity : AppCompatActivity() {
             return true
         }
         if (item.itemId == R.id.action_export) {
-            if (selectedUnite.isBlank() || selectedItem.isBlank()) return true
-            val options = arrayOf("Export CSV (compatible Excel)", "Export PDF (avec photos)")
-            androidx.appcompat.app.AlertDialog.Builder(this)
+            val options = arrayOf("Excel (mettre à jour le fichier importé, tous les items)", "PDF (item courant, avec photos)")
+            AlertDialog.Builder(this)
                 .setTitle(getString(R.string.btn_export))
                 .setItems(options) { _, which ->
                     lifecycleScope.launch {
-                        val manager = ExportManager(this@MainActivity, repo)
-                        val path = if (which == 0) {
-                            manager.exportCsv(selectedUnite, selectedFamille, selectedItem)
-                        } else {
-                            manager.exportPdf(selectedUnite, selectedFamille, selectedItem)
+                        try {
+                            val path = if (which == 0) {
+                                repo.exportNativeExcel()
+                            } else {
+                                if (selectedUnite.isBlank() || selectedItem.isBlank()) {
+                                    android.widget.Toast.makeText(this@MainActivity, getString(R.string.export_erreur, "sélectionnez d'abord un item"), android.widget.Toast.LENGTH_LONG).show()
+                                    return@launch
+                                }
+                                ExportManager(this@MainActivity, repo).exportPdf(selectedUnite, selectedFamille, selectedItem)
+                            }
+                            android.widget.Toast.makeText(this@MainActivity, getString(R.string.export_done, path), android.widget.Toast.LENGTH_LONG).show()
+                        } catch (e: Exception) {
+                            android.widget.Toast.makeText(this@MainActivity, getString(R.string.export_erreur, e.message ?: ""), android.widget.Toast.LENGTH_LONG).show()
                         }
-                        android.widget.Toast.makeText(this@MainActivity, getString(R.string.export_done, path), android.widget.Toast.LENGTH_LONG).show()
                     }
                 }
                 .show()

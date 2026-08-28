@@ -42,6 +42,10 @@ interface BrideCatalogDao {
 
     @Query("SELECT * FROM bride_catalog WHERE unite = :unite AND famille = :famille AND item = :item ORDER BY rep")
     fun getBrides(unite: String, famille: String, item: String): Flow<List<BrideCatalog>>
+
+    /** Tout le catalogue, tous items confondus (export natif Excel). */
+    @Query("SELECT * FROM bride_catalog")
+    suspend fun getAllOnce(): List<BrideCatalog>
 }
 
 @Dao
@@ -63,6 +67,10 @@ interface InspectionResultDao {
 
     @Query("SELECT * FROM inspection_result WHERE unite = :unite AND famille = :famille AND item = :item AND rep = :rep LIMIT 1")
     suspend fun getForBride(unite: String, famille: String, item: String, rep: String): InspectionResult?
+
+    /** Tous les contrôles, tous items confondus (export natif Excel). */
+    @Query("SELECT * FROM inspection_result")
+    suspend fun getAllOnce(): List<InspectionResult>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(result: InspectionResult)
