@@ -49,6 +49,9 @@ interface PvHeaderDao {
     @Query("SELECT * FROM pv_header WHERE id = 1")
     fun getHeader(): Flow<PvHeader?>
 
+    @Query("SELECT * FROM pv_header WHERE id = 1")
+    suspend fun getHeaderOnce(): PvHeader?
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun save(header: PvHeader)
 }

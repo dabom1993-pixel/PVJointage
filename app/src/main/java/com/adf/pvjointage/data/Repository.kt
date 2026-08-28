@@ -3,8 +3,10 @@ package com.adf.pvjointage.data
 import android.content.Context
 import android.net.Uri
 import androidx.room.withTransaction
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -17,29 +19,41 @@ class Repository(private val appContext: Context) {
 
     data class ImportResult(val brideCount: Int, val schemaCount: Int)
 
+    /** Copie localement le fichier Excel choisi et permet d'en lister/lire les onglets. */
+    suspend fun openExcelWorkbook(uri: Uri): ExcelImporter.OpenWorkbook = withContext(Dispatchers.IO) {
+        ExcelImporter(appContext).open(uri)
+    }
+
+    suspend fun listExcelSheets(workbook: ExcelImporter.OpenWorkbook): List<String> = withContext(Dispatchers.IO) {
+        workbook.listSheetNames()
+    }
+
     /**
-     * Réimporte le catalogue des brides depuis l'onglet "1-Trame" d'un fichier Excel choisi par
+     * Réimporte le catalogue des brides + Client/Lieu depuis l'onglet [sheetName] choisi par
      * l'utilisateur, en écrasant le catalogue existant (brides + items dérivés). Si
      * [imagesTreeUri] est fourni, importe aussi les schémas depuis ce dossier (une image par
      * ITEM, nommée par son code), en écrasant les schémas existants.
      */
-    suspend fun importFromExcelAndImages(excelUri: Uri, imagesTreeUri: Uri?): ImportResult {
-        val brides = ExcelImporter(appContext).parseTrame(excelUri)
-        val items = brides.map { Triple(it.unite, it.famille, it.item) }.distinct()
+    suspend fun importFromExcelAndImages(workbook: ExcelImporter.OpenWorkbook, sheetName: String, imagesTreeUri: Uri?): ImportResult {
+        val parsed = withContext(Dispatchers.IO) { workbook.parseSheet(sheetName) }
+        val items = parsed.brides.map { Triple(it.unite, it.famille, it.item) }.distinct()
 
         val schemas = imagesTreeUri?.let { SchemaFolderImporter(appContext).importSchemas(it, items) } ?: emptyList()
 
         db.withTransaction {
             db.brideCatalogDao().deleteAll()
-            db.brideCatalogDao().insertAll(brides)
+            db.brideCatalogDao().insertAll(parsed.brides)
             db.itemCatalogDao().deleteAll()
             db.itemCatalogDao().insertAll(items.map { ItemCatalog(unite = it.first, famille = it.second, item = it.third) })
             if (imagesTreeUri != null) {
                 db.itemSchemaDao().deleteAll()
                 db.itemSchemaDao().insertAll(schemas)
             }
+            // Client / Lieu proviennent désormais du fichier Excel importé (non saisis dans l'app).
+            val current = db.pvHeaderDao().getHeaderOnce() ?: PvHeader()
+            db.pvHeaderDao().save(current.copy(client = parsed.client, lieu = parsed.lieu, date = today()))
         }
-        return ImportResult(brides.size, schemas.size)
+        return ImportResult(parsed.brides.size, schemas.size)
     }
 
     // Catalogue

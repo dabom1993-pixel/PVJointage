@@ -12,7 +12,6 @@
     <string name="client">Client</string>
     <string name="lieu">Lieu</string>
     <string name="date">Date</string>
-    <string name="fait_par">Fait par</string>
     <string name="unite">Unité</string>
     <string name="type_equipement">Type d\'équipement :</string>
     <string name="item_label">ITEM :</string>
@@ -65,7 +64,8 @@
     <string name="dialog_oui">OUI</string>
     <string name="dialog_non">NON</string>
     <string name="import_confirm_titre">Importer de nouvelles données</string>
-    <string name="import_confirm_message">Êtes-vous sûr de vouloir importer de nouvelles données,\ncela va écraser le fichier existant</string>
+    <string name="import_confirm_message">Êtes-vous sûr de vouloir importer de nouvelles données,\ncela va écraser le fichier existant ?</string>
+    <string name="import_choisir_onglet_titre">Quel onglet utiliser pour l\'import ?</string>
     <string name="import_choisir_dossier_schemas">Sélectionnez maintenant le dossier contenant les images des schémas (un fichier par ITEM)</string>
     <string name="import_en_cours">Import en cours…</string>
     <string name="import_succes">Import terminé : %1$d brides importées</string>

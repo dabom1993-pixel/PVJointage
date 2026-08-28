@@ -39,7 +39,7 @@ data class BrideCatalog(
 )
 
 /**
- * En-tête du PV (équivalent des cellules Client / Lieu / Date / Fait par de "1-Exemple").
+ * En-tête du PV (équivalent des cellules Client / Lieu / Date de "1-Exemple").
  * Un seul enregistrement actif à la fois (id fixe = 1).
  */
 @Entity(tableName = "pv_header")
@@ -48,6 +48,9 @@ data class PvHeader(
     val client: String = "",
     val lieu: String = "",
     val date: String = "",
+    // Conservé pour compatibilité de schéma avec les bases déjà installées sur les tablettes
+    // (retirer la colonne nécessiterait une migration Room) ; le champ "Fait par" n'existe
+    // plus dans l'interface et cette valeur n'est plus utilisée.
     val faitPar: String = "",
     val uniteSelectionnee: String = "",
     val familleSelectionnee: String = "",

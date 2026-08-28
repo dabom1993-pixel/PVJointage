@@ -21,6 +21,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import coil.load
 import com.adf.pvjointage.PvApp
 import com.adf.pvjointage.R
+import com.adf.pvjointage.data.ExcelImporter
 import com.adf.pvjointage.data.PvHeader
 import com.adf.pvjointage.databinding.ActivityMainBinding
 import com.adf.pvjointage.databinding.DialogSchemaZoomBinding
@@ -59,21 +60,20 @@ class MainActivity : AppCompatActivity() {
         })
     }
 
-    private var pendingExcelUri: Uri? = null
+    private var pendingWorkbook: ExcelImporter.OpenWorkbook? = null
+    private var pendingSheetName: String? = null
 
     private val pickExcelFile = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
-        if (uri != null) {
-            pendingExcelUri = uri
-            android.widget.Toast.makeText(this, R.string.import_choisir_dossier_schemas, android.widget.Toast.LENGTH_LONG).show()
-            pickSchemasFolder.launch(null)
-        }
+        if (uri != null) openWorkbookAndChooseSheet(uri)
     }
 
-    /** Dossier des images de schémas (un fichier par ITEM) : demandé juste après le fichier Excel. */
+    /** Dossier des images de schémas (un fichier par ITEM) : demandé juste après le choix de l'onglet. */
     private val pickSchemasFolder = registerForActivityResult(ActivityResultContracts.OpenDocumentTree()) { treeUri: Uri? ->
-        val excelUri = pendingExcelUri
-        pendingExcelUri = null
-        if (excelUri != null) importFromExcel(excelUri, treeUri)
+        val workbook = pendingWorkbook
+        val sheetName = pendingSheetName
+        pendingWorkbook = null
+        pendingSheetName = null
+        if (workbook != null && sheetName != null) importFromExcel(workbook, sheetName, treeUri)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -108,7 +108,6 @@ class MainActivity : AppCompatActivity() {
                         currentHeader = header
                         if (binding.etClient.text.toString() != header.client) binding.etClient.setText(header.client)
                         if (binding.etLieu.text.toString() != header.lieu) binding.etLieu.setText(header.lieu)
-                        if (binding.etFaitPar.text.toString() != header.faitPar) binding.etFaitPar.setText(header.faitPar)
                         if (binding.etDate.text.toString() != header.date) binding.etDate.setText(header.date)
                         if (header.uniteSelectionnee.isNotBlank() && selectedUnite.isBlank()) {
                             selectedUnite = header.uniteSelectionnee
@@ -291,25 +290,59 @@ class MainActivity : AppCompatActivity() {
         return super.onOptionsItemSelected(item)
     }
 
-    /** Affiche la confirmation OUI/NON puis, si OUI, ouvre le sélecteur de fichier Excel. */
+    /**
+     * Affiche la confirmation OUI (à gauche) / NON (à droite) puis, si OUI, ouvre le sélecteur
+     * de fichier Excel. Android place toujours le bouton "négatif" à gauche et le bouton
+     * "positif" à droite : on met donc OUI en négatif et NON en positif pour obtenir cet ordre.
+     */
     private fun confirmImport() {
         AlertDialog.Builder(this)
             .setTitle(R.string.import_confirm_titre)
             .setMessage(R.string.import_confirm_message)
-            .setPositiveButton(R.string.dialog_oui) { _, _ -> pickExcelFile.launch(arrayOf("*/*")) }
-            .setNegativeButton(R.string.dialog_non, null)
+            .setNegativeButton(R.string.dialog_oui) { _, _ -> pickExcelFile.launch(arrayOf("*/*")) }
+            .setPositiveButton(R.string.dialog_non, null)
             .show()
     }
 
+    /** Ouvre le fichier Excel choisi et demande quel onglet utiliser pour l'import. */
+    private fun openWorkbookAndChooseSheet(uri: Uri) {
+        lifecycleScope.launch {
+            try {
+                val workbook = repo.openExcelWorkbook(uri)
+                val sheets = repo.listExcelSheets(workbook)
+                if (sheets.isEmpty()) {
+                    workbook.close()
+                    android.widget.Toast.makeText(this@MainActivity, getString(R.string.import_erreur, "Aucun onglet trouvé dans ce fichier"), android.widget.Toast.LENGTH_LONG).show()
+                    return@launch
+                }
+                var workbookClosed = false
+                AlertDialog.Builder(this@MainActivity)
+                    .setTitle(R.string.import_choisir_onglet_titre)
+                    .setItems(sheets.toTypedArray()) { _, which ->
+                        workbookClosed = true
+                        pendingWorkbook = workbook
+                        pendingSheetName = sheets[which]
+                        android.widget.Toast.makeText(this@MainActivity, R.string.import_choisir_dossier_schemas, android.widget.Toast.LENGTH_LONG).show()
+                        pickSchemasFolder.launch(null)
+                    }
+                    .setOnCancelListener { if (!workbookClosed) workbook.close() }
+                    .show()
+            } catch (e: Exception) {
+                android.widget.Toast.makeText(this@MainActivity, getString(R.string.import_erreur, e.message ?: ""), android.widget.Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
     /**
-     * Lit l'onglet "1-Trame" du fichier choisi (catalogue de brides) et, si [imagesTreeUri] est
-     * fourni, le dossier d'images de schémas associé, puis remplace les données existantes.
+     * Lit l'onglet [sheetName] du fichier choisi (catalogue de brides + Client/Lieu) et, si
+     * [imagesTreeUri] est fourni, le dossier d'images de schémas associé, puis remplace les
+     * données existantes.
      */
-    private fun importFromExcel(uri: Uri, imagesTreeUri: Uri?) {
+    private fun importFromExcel(workbook: ExcelImporter.OpenWorkbook, sheetName: String, imagesTreeUri: Uri?) {
         android.widget.Toast.makeText(this, R.string.import_en_cours, android.widget.Toast.LENGTH_SHORT).show()
         lifecycleScope.launch {
             try {
-                val result = repo.importFromExcelAndImages(uri, imagesTreeUri)
+                val result = repo.importFromExcelAndImages(workbook, sheetName, imagesTreeUri)
 
                 // Le catalogue vient de changer : on repart d'une sélection vierge, la
                 // collecte déjà active (observeUnites) se rechargera automatiquement.
@@ -332,6 +365,8 @@ class MainActivity : AppCompatActivity() {
                 android.widget.Toast.makeText(this@MainActivity, message, android.widget.Toast.LENGTH_LONG).show()
             } catch (e: Exception) {
                 android.widget.Toast.makeText(this@MainActivity, getString(R.string.import_erreur, e.message ?: ""), android.widget.Toast.LENGTH_LONG).show()
+            } finally {
+                workbook.close()
             }
         }
     }
