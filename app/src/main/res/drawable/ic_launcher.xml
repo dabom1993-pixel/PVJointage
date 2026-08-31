@@ -3,8 +3,54 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <path android:fillColor="#0B5394" android:pathData="M0,0h108v108h-108z" />
+    <!-- Fond -->
+    <path android:fillColor="#FFFFFF" android:pathData="M0,0h108v108h-108z" />
+    <!-- Carre vert style Groupe ADF, ouvert au milieu du cote droit -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#5FA052"
+        android:strokeWidth="4.64"
+        android:pathData="M104.62,18.98 L104.62,3.38 L3.38,3.38 L3.38,104.62 L104.62,104.62 L104.62,89.02" />
+    <!-- Corps de la bride -->
+    <path
+        android:fillColor="#203760"
+        android:pathData="M16.03,54 a37.97,37.97 0 1,0 75.94,0 a37.97,37.97 0 1,0 -75.94,0" />
+    <!-- Boulons -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M30,30 h48 v10 h-48 z M30,49 h48 v10 h-48 z M30,68 h30 v10 h-30 z" />
+        android:pathData="M50.41,23.42 a3.59,3.59 0 1,0 7.17,0 a3.59,3.59 0 1,0 -7.17,0
+                            M72.03,32.38 a3.59,3.59 0 1,0 7.17,0 a3.59,3.59 0 1,0 -7.17,0
+                            M81.00,54 a3.59,3.59 0 1,0 7.17,0 a3.59,3.59 0 1,0 -7.17,0
+                            M72.03,75.62 a3.59,3.59 0 1,0 7.17,0 a3.59,3.59 0 1,0 -7.17,0
+                            M50.41,84.59 a3.59,3.59 0 1,0 7.17,0 a3.59,3.59 0 1,0 -7.17,0
+                            M28.79,75.62 a3.59,3.59 0 1,0 7.17,0 a3.59,3.59 0 1,0 -7.17,0
+                            M19.83,54 a3.59,3.59 0 1,0 7.17,0 a3.59,3.59 0 1,0 -7.17,0
+                            M28.79,32.38 a3.59,3.59 0 1,0 7.17,0 a3.59,3.59 0 1,0 -7.17,0" />
+    <!-- Alesage -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M35.44,54 a18.56,18.56 0 1,0 37.12,0 a18.56,18.56 0 1,0 -37.12,0" />
+    <!-- Joint -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#5FA052"
+        android:strokeWidth="3.16"
+        android:pathData="M40.5,54 a13.5,13.5 0 1,0 27,0 a13.5,13.5 0 1,0 -27,0" />
+    <path
+        android:fillColor="#203760"
+        android:pathData="M48.30,54 a5.7,5.7 0 1,0 11.39,0 a5.7,5.7 0 1,0 -11.39,0" />
+    <!-- Pastille de reception -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M65.60,80.79 a15.19,15.19 0 1,0 30.38,0 a15.19,15.19 0 1,0 -30.38,0" />
+    <path
+        android:fillColor="#5FA052"
+        android:pathData="M68.13,80.79 a12.66,12.66 0 1,0 25.33,0 a12.66,12.66 0 1,0 -25.33,0" />
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="2.95"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M74.88,80.79 L78.89,85.02 L87.54,75.94" />
 </vector>
