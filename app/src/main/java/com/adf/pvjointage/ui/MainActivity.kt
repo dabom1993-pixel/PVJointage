@@ -139,7 +139,7 @@ class MainActivity : AppCompatActivity() {
         unitesJob = lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 repo.getUnites().collect { unites ->
-                    populateSpinner(binding.spUnite, unites, selectedUnite) { chosen ->
+                    populateSpinner(binding.spUnite, unites, { selectedUnite }) { chosen ->
                         selectedUnite = chosen
                         selectedFamille = ""
                         selectedItem = ""
@@ -160,7 +160,7 @@ class MainActivity : AppCompatActivity() {
         famillesJob?.cancel()
         famillesJob = lifecycleScope.launch {
             repo.getFamilles(selectedUnite).collect { familles ->
-                populateSpinner(binding.spFamille, familles, selectedFamille) { chosen ->
+                populateSpinner(binding.spFamille, familles, { selectedFamille }) { chosen ->
                     selectedFamille = chosen
                     selectedItem = ""
                     observeItems()
@@ -179,7 +179,7 @@ class MainActivity : AppCompatActivity() {
         itemsJob?.cancel()
         itemsJob = lifecycleScope.launch {
             repo.getItems(selectedUnite, selectedFamille).collect { items ->
-                populateSpinner(binding.spItem, items, selectedItem) { chosen ->
+                populateSpinner(binding.spItem, items, { selectedItem }) { chosen ->
                     selectedItem = chosen
                     persistSelection()
                     observeBridesAndInspections()
@@ -206,7 +206,13 @@ class MainActivity : AppCompatActivity() {
         saveHeader()
     }
 
-    private fun populateSpinner(spinner: android.widget.Spinner, values: List<String>, selected: String, onSelected: (String) -> Unit) {
+    /**
+     * [currentSelection] est relu à chaque sélection (et non figé au moment de l'appel) :
+     * sinon, après une navigation directe (fenêtre Catalogue), la comparaison restait bloquée
+     * sur l'ancienne valeur et resélectionner ce même item ne déclenchait plus rien.
+     */
+    private fun populateSpinner(spinner: android.widget.Spinner, values: List<String>, currentSelection: () -> String, onSelected: (String) -> Unit) {
+        val selected = currentSelection()
         val adapterSp = ArrayAdapter(this, android.R.layout.simple_spinner_item, values)
         adapterSp.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         suppressSpinnerEvents = true
@@ -218,7 +224,7 @@ class MainActivity : AppCompatActivity() {
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
                 if (suppressSpinnerEvents) return
                 val value = values.getOrNull(position) ?: return
-                if (value != selected) onSelected(value)
+                if (value != currentSelection()) onSelected(value)
             }
             override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
