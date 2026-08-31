@@ -86,7 +86,9 @@ class MainActivity : AppCompatActivity() {
         binding.rvBrides.layoutManager = LinearLayoutManager(this)
         binding.rvBrides.adapter = adapter
 
-        lifecycleScope.launch { repo.ensureSeedData(); observeHeader(); observeUnites() }
+        // Pas d'import automatique de données de démonstration : au premier lancement, la
+        // tablette doit rester vide (aucun item, aucun schéma) tant que rien n'a été importé.
+        lifecycleScope.launch { observeHeader(); observeUnites() }
 
         binding.imgSchema.setOnTouchListener { _, event ->
             schemaGestureDetector.onTouchEvent(event)
@@ -142,8 +144,11 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private var famillesJob: kotlinx.coroutines.Job? = null
+
     private fun observeFamilles() {
-        lifecycleScope.launch {
+        famillesJob?.cancel()
+        famillesJob = lifecycleScope.launch {
             repo.getFamilles(selectedUnite).collect { familles ->
                 populateSpinner(binding.spFamille, familles, selectedFamille) { chosen ->
                     selectedFamille = chosen
@@ -158,8 +163,11 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private var itemsJob: kotlinx.coroutines.Job? = null
+
     private fun observeItems() {
-        lifecycleScope.launch {
+        itemsJob?.cancel()
+        itemsJob = lifecycleScope.launch {
             repo.getItems(selectedUnite, selectedFamille).collect { items ->
                 populateSpinner(binding.spItem, items, selectedItem) { chosen ->
                     selectedItem = chosen
@@ -260,6 +268,18 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.main_menu, menu)
+        // Forcer le blanc directement sur le texte des items (plus fiable sur certains
+        // appareils que le seul attribut app:actionMenuTextColor du Toolbar).
+        for (i in 0 until menu.size()) {
+            val menuItem = menu.getItem(i)
+            val title = menuItem.title ?: continue
+            val spannable = android.text.SpannableString(title)
+            spannable.setSpan(
+                android.text.style.ForegroundColorSpan(android.graphics.Color.WHITE),
+                0, spannable.length, android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+            )
+            menuItem.title = spannable
+        }
         return true
     }
 
