@@ -65,7 +65,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:textStyle="bold"
-                android:textSize="16sp"
+                android:textSize="19sp"
                 android:textColor="@color/primary_dark"
                 android:layout_marginBottom="10dp"/>
 
@@ -73,8 +73,8 @@
             <androidx.cardview.widget.CardView android:layout_width="match_parent" android:layout_height="wrap_content" app:cardCornerRadius="8dp" app:cardElevation="2dp" android:layout_marginBottom="10dp">
                 <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="12dp">
                     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical">
-                        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="@string/section_etiquette" android:textStyle="bold" android:textColor="@color/primary"/>
-                        <TextView android:id="@+id/tvStatutEtiquette" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textStyle="bold" android:padding="4dp"/>
+                        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="@string/section_etiquette" android:textStyle="bold" android:textColor="@color/primary" android:textSize="17sp"/>
+                        <TextView android:id="@+id/tvStatutEtiquette" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textStyle="bold" android:padding="4dp" android:textSize="16sp"/>
                     </LinearLayout>
                     <com.adf.pvjointage.ui.EtatSelectorView android:id="@+id/selEtiMiseSerree" android:layout_width="match_parent" android:layout_height="wrap_content"/>
                     <com.adf.pvjointage.ui.EtatSelectorView android:id="@+id/selEtiNomDate" android:layout_width="match_parent" android:layout_height="wrap_content"/>
@@ -85,10 +85,10 @@
             <androidx.cardview.widget.CardView android:layout_width="match_parent" android:layout_height="wrap_content" app:cardCornerRadius="8dp" app:cardElevation="2dp" android:layout_marginBottom="10dp">
                 <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="12dp">
                     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical">
-                        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="@string/section_joint" android:textStyle="bold" android:textColor="@color/primary"/>
-                        <TextView android:id="@+id/tvStatutJoint" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textStyle="bold" android:padding="4dp"/>
+                        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="@string/section_joint" android:textStyle="bold" android:textColor="@color/primary" android:textSize="17sp"/>
+                        <TextView android:id="@+id/tvStatutJoint" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textStyle="bold" android:padding="4dp" android:textSize="16sp"/>
                     </LinearLayout>
-                    <TextView android:id="@+id/tvJointRef" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="12sp" android:textColor="@color/black" android:layout_marginBottom="4dp"/>
+                    <TextView android:id="@+id/tvJointRef" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="14sp" android:textColor="@color/black" android:layout_marginBottom="4dp"/>
                     <com.adf.pvjointage.ui.EtatSelectorView android:id="@+id/selJointMatiere" android:layout_width="match_parent" android:layout_height="wrap_content"/>
                     <com.adf.pvjointage.ui.EtatSelectorView android:id="@+id/selJointDimension" android:layout_width="match_parent" android:layout_height="wrap_content"/>
                     <com.adf.pvjointage.ui.EtatSelectorView android:id="@+id/selJointAspect" android:layout_width="match_parent" android:layout_height="wrap_content"/>
@@ -99,10 +99,10 @@
             <androidx.cardview.widget.CardView android:layout_width="match_parent" android:layout_height="wrap_content" app:cardCornerRadius="8dp" app:cardElevation="2dp" android:layout_marginBottom="10dp">
                 <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="12dp">
                     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical">
-                        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="@string/section_boulonnerie" android:textStyle="bold" android:textColor="@color/primary"/>
-                        <TextView android:id="@+id/tvStatutBoulonnerie" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textStyle="bold" android:padding="4dp"/>
+                        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="@string/section_boulonnerie" android:textStyle="bold" android:textColor="@color/primary" android:textSize="17sp"/>
+                        <TextView android:id="@+id/tvStatutBoulonnerie" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textStyle="bold" android:padding="4dp" android:textSize="16sp"/>
                     </LinearLayout>
-                    <TextView android:id="@+id/tvBoulonRef" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="12sp" android:textColor="@color/black" android:layout_marginBottom="4dp"/>
+                    <TextView android:id="@+id/tvBoulonRef" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="14sp" android:textColor="@color/black" android:layout_marginBottom="4dp"/>
                     <com.adf.pvjointage.ui.EtatSelectorView android:id="@+id/selBoulonNeuves" android:layout_width="match_parent" android:layout_height="wrap_content"/>
                     <com.adf.pvjointage.ui.EtatSelectorView android:id="@+id/selBoulonRondelles" android:layout_width="match_parent" android:layout_height="wrap_content"/>
                     <com.adf.pvjointage.ui.EtatSelectorView android:id="@+id/selBoulonEquilibrage" android:layout_width="match_parent" android:layout_height="wrap_content"/>
@@ -116,19 +116,36 @@
             <androidx.cardview.widget.CardView android:layout_width="match_parent" android:layout_height="wrap_content" app:cardCornerRadius="8dp" app:cardElevation="2dp" android:layout_marginBottom="10dp">
                 <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="12dp">
                     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical">
-                        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="@string/section_assemblage" android:textStyle="bold" android:textColor="@color/primary"/>
-                        <TextView android:id="@+id/tvStatutAssemblage" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textStyle="bold" android:padding="4dp"/>
+                        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="@string/section_assemblage" android:textStyle="bold" android:textColor="@color/primary" android:textSize="17sp"/>
+                        <TextView android:id="@+id/tvStatutAssemblage" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textStyle="bold" android:padding="4dp" android:textSize="16sp"/>
                     </LinearLayout>
                     <com.adf.pvjointage.ui.EtatSelectorView android:id="@+id/selAssemblageParallelisme" android:layout_width="match_parent" android:layout_height="wrap_content"/>
                     <com.adf.pvjointage.ui.EtatSelectorView android:id="@+id/selAssemblageExcentration" android:layout_width="match_parent" android:layout_height="wrap_content"/>
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
+            <!-- REMARQUE -->
+            <androidx.cardview.widget.CardView android:layout_width="match_parent" android:layout_height="wrap_content" app:cardCornerRadius="8dp" app:cardElevation="2dp" android:layout_marginBottom="10dp">
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="12dp">
+                    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/section_remarque" android:textStyle="bold" android:textColor="@color/primary" android:textSize="17sp" android:layout_marginBottom="8dp"/>
+                    <EditText
+                        android:id="@+id/etRemarque"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="top|start"
+                        android:inputType="textMultiLine|textCapSentences"
+                        android:maxLines="5"
+                        android:minLines="2"
+                        android:textSize="15sp"
+                        android:hint="@string/remarque_hint"/>
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
             <!-- PHOTO -->
             <androidx.cardview.widget.CardView android:layout_width="match_parent" android:layout_height="wrap_content" app:cardCornerRadius="8dp" app:cardElevation="2dp" android:layout_marginBottom="10dp">
                 <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="12dp">
-                    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/section_photo" android:textStyle="bold" android:textColor="@color/primary" android:layout_marginBottom="8dp"/>
-                    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Les photos sont propres à cette bride (repère)." android:textSize="12sp" android:layout_marginBottom="8dp"/>
+                    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/section_photo" android:textStyle="bold" android:textColor="@color/primary" android:textSize="17sp" android:layout_marginBottom="8dp"/>
+                    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Les photos sont propres à cette bride (repère)." android:textSize="14sp" android:layout_marginBottom="8dp"/>
                     <Button
                         android:id="@+id/btnPrendrePhoto"
                         style="@style/Widget.MaterialComponents.Button.OutlinedButton"

@@ -50,6 +50,8 @@
     <string name="section_assemblage">ASSEMBLAGE</string>
     <string name="assemblage_parallelisme">Parallélisme</string>
     <string name="assemblage_excentration">Excentration</string>
+    <string name="section_remarque">REMARQUE :</string>
+    <string name="remarque_hint">Texte libre (5 lignes maximum)</string>
     <string name="section_photo">PHOTO (ETIQUETTE &amp; ASSEMBLAGE)</string>
 
     <string name="oui">O</string>

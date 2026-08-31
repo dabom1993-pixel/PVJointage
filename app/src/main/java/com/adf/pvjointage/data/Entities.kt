@@ -93,6 +93,9 @@ data class InspectionResult(
     val assemblageParallelisme: String = "",
     val assemblageExcentration: String = "",
 
+    // Texte libre, saisi entre les sections ASSEMBLAGE et PHOTO (5 lignes maximum).
+    val remarque: String = "",
+
     val dateModification: Long = System.currentTimeMillis()
 )
 

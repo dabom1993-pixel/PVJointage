@@ -9,6 +9,9 @@ import android.graphics.Paint
 import android.graphics.RectF
 import android.graphics.pdf.PdfDocument
 import android.net.Uri
+import android.text.StaticLayout
+import android.text.TextPaint
+import android.text.TextUtils
 import com.adf.pvjointage.R
 import com.adf.pvjointage.data.BrideCatalog
 import com.adf.pvjointage.data.InspectionResult
@@ -274,6 +277,11 @@ class ExportManager(private val context: Context, private val repo: Repository) 
         // ASSEMBLAGE
         y = drawSectionBar(canvas, marginX, y, contentWidth, "ASSEMBLAGE")
         y = drawTwoEtatRow(canvas, marginX, y, contentWidth, "Parallélisme", insp?.assemblageParallelisme, "Excentration", insp?.assemblageExcentration)
+        y += 8f
+
+        // REMARQUE
+        y = drawSectionBar(canvas, marginX, y, contentWidth, "REMARQUE :")
+        y = drawWrappedText(canvas, marginX, y, contentWidth, insp?.remarque.orEmpty(), maxLines = 5)
         y += 10f
 
         // PHOTOS
@@ -327,6 +335,22 @@ class ExportManager(private val context: Context, private val repo: Repository) 
     private fun verticalBaseline(height: Float, paint: Paint): Float {
         val fm = paint.fontMetrics
         return height / 2f - (fm.ascent + fm.descent) / 2f
+    }
+
+    /** Texte libre multi-lignes (REMARQUE), limité à [maxLines] lignes comme sur la tablette. */
+    private fun drawWrappedText(canvas: Canvas, x: Float, y: Float, width: Float, text: String, maxLines: Int): Float {
+        if (text.isBlank()) return y + 6f
+        val textPaint = TextPaint().apply { color = Color.BLACK; textSize = 9.5f }
+        val layout = StaticLayout.Builder
+            .obtain(text, 0, text.length, textPaint, width.toInt().coerceAtLeast(1))
+            .setMaxLines(maxLines)
+            .setEllipsize(TextUtils.TruncateAt.END)
+            .build()
+        canvas.save()
+        canvas.translate(x, y + 4f)
+        layout.draw(canvas)
+        canvas.restore()
+        return y + 4f + layout.height
     }
 
     private fun drawSectionBar(canvas: Canvas, x: Float, y: Float, width: Float, title: String): Float {

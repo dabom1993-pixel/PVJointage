@@ -138,8 +138,17 @@ class ChampActivity : AppCompatActivity() {
                 binding.selBoulonMatiere.setEtat(Etat.fromCode(insp.boulonMatiere), notify = false)
                 binding.selAssemblageParallelisme.setEtat(Etat.fromCode(insp.assemblageParallelisme), notify = false)
                 binding.selAssemblageExcentration.setEtat(Etat.fromCode(insp.assemblageExcentration), notify = false)
+                binding.etRemarque.setText(insp.remarque)
             }
             refreshStatuts()
+
+            // Enregistrement automatique de la remarque, comme pour les boutons O/N/A
+            // (attaché après le chargement pour ne pas redéclencher une sauvegarde inutile).
+            binding.etRemarque.addTextChangedListener(object : android.text.TextWatcher {
+                override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+                override fun afterTextChanged(s: android.text.Editable?) { saveInspection() }
+            })
         }
     }
 
@@ -208,7 +217,8 @@ class ChampActivity : AppCompatActivity() {
             boulonLongueurDiametre = binding.selBoulonLongueur.etat.code,
             boulonMatiere = binding.selBoulonMatiere.etat.code,
             assemblageParallelisme = binding.selAssemblageParallelisme.etat.code,
-            assemblageExcentration = binding.selAssemblageExcentration.etat.code
+            assemblageExcentration = binding.selAssemblageExcentration.etat.code,
+            remarque = binding.etRemarque.text.toString()
         )
         lifecycleScope.launch { repo.saveInspection(result) }
     }
