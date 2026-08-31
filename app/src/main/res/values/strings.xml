@@ -88,7 +88,7 @@
     <string name="schema_titre">SCHÉMA / PLAN DE L\'ÉQUIPEMENT</string>
     <string name="aucun_schema">Aucun schéma pour cet item</string>
 
-    <string name="btn_catalogue">Catalogue</string>
+    <string name="btn_catalogue">Filtre</string>
     <string name="catalogue_titre">CATALOGUE DES ITEMS</string>
     <string name="catalogue_filtrer">Filtrer :</string>
     <string name="catalogue_tous">Tous</string>
