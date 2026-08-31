@@ -27,6 +27,10 @@ interface ItemCatalogDao {
 
     @Query("SELECT DISTINCT item FROM item_catalog WHERE unite = :unite AND famille = :famille ORDER BY item")
     fun getItems(unite: String, famille: String): Flow<List<String>>
+
+    /** Tout le catalogue (fenêtre "Catalogue" : vue d'ensemble Unité/Famille/Item). */
+    @Query("SELECT * FROM item_catalog ORDER BY unite, famille, item")
+    suspend fun getAllOnce(): List<ItemCatalog>
 }
 
 @Dao

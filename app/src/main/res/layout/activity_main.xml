@@ -143,6 +143,15 @@
             android:padding="10dp"
             android:columnCount="4">
 
+            <Button
+                android:id="@+id/btnCatalogue"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_columnWeight="1"
+                android:layout_margin="4dp"
+                android:text="@string/btn_catalogue" />
+
             <Spinner
                 android:id="@+id/spUnite"
                 android:layout_width="0dp"

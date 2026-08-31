@@ -3,6 +3,9 @@ package com.adf.pvjointage.data
 import android.content.Context
 import android.net.Uri
 import androidx.room.withTransaction
+import com.adf.pvjointage.model.Conformite
+import com.adf.pvjointage.model.ConformiteCalculator
+import com.adf.pvjointage.model.Etat
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -82,6 +85,40 @@ class Repository(private val appContext: Context) {
         val dir = File(appContext.getExternalFilesDir(null), "reference")
         dir.mkdirs()
         return File(dir, "classeur_reference.xlsm")
+    }
+
+    data class CatalogueEntry(val unite: String, val famille: String, val item: String, val complete: Boolean)
+
+    /**
+     * Vue d'ensemble Unité/Famille/Item pour la fenêtre "Catalogue" : un item est considéré
+     * "complet" (rempli à 100 %) si toutes ses brides ont un statut global déterminé
+     * (CONFORME ou NON CONFORME), c'est-à-dire plus aucune case en attente.
+     */
+    suspend fun getCatalogueOverview(): List<CatalogueEntry> = withContext(Dispatchers.IO) {
+        val items = db.itemCatalogDao().getAllOnce()
+        val bridesByItem = db.brideCatalogDao().getAllOnce().groupBy { Triple(it.unite, it.famille, it.item) }
+        val inspectionsByKey = db.inspectionResultDao().getAllOnce()
+            .associateBy { "${it.unite}|${it.famille}|${it.item}|${it.rep}" }
+
+        items.map { ic ->
+            val brides = bridesByItem[Triple(ic.unite, ic.famille, ic.item)].orEmpty()
+            val complete = brides.isNotEmpty() && brides.all { b ->
+                val insp = inspectionsByKey["${ic.unite}|${ic.famille}|${ic.item}|${b.rep}"]
+                insp != null && globalConformite(insp) != Conformite.EN_ATTENTE
+            }
+            CatalogueEntry(ic.unite, ic.famille, ic.item, complete)
+        }
+    }
+
+    private fun globalConformite(insp: InspectionResult): Conformite {
+        val etiquette = ConformiteCalculator.etiquette(Etat.fromCode(insp.etiMiseSerree), Etat.fromCode(insp.etiNomDateLisible))
+        val joint = ConformiteCalculator.joint(Etat.fromCode(insp.jointMatiereConforme), Etat.fromCode(insp.jointDimensionCentrage), Etat.fromCode(insp.jointAspectNeuf))
+        val boulonnerie = ConformiteCalculator.boulonnerie(
+            Etat.fromCode(insp.boulonNeuves), Etat.fromCode(insp.boulonRondelles), Etat.fromCode(insp.boulonEquilibrage),
+            Etat.fromCode(insp.boulonGraissage), Etat.fromCode(insp.boulonLongueurDiametre), Etat.fromCode(insp.boulonMatiere)
+        )
+        val assemblage = ConformiteCalculator.assemblage(Etat.fromCode(insp.assemblageParallelisme), Etat.fromCode(insp.assemblageExcentration))
+        return ConformiteCalculator.global(etiquette, joint, boulonnerie, assemblage)
     }
 
     // Catalogue

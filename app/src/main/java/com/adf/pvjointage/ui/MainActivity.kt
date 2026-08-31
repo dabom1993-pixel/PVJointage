@@ -2,6 +2,7 @@ package com.adf.pvjointage.ui
 
 import android.app.Dialog
 import android.content.Intent
+import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
 import android.view.GestureDetector
@@ -11,9 +12,14 @@ import android.view.MotionEvent
 import android.view.View
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
+import android.widget.LinearLayout
+import android.widget.TableLayout
+import android.widget.TableRow
+import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -23,7 +29,9 @@ import com.adf.pvjointage.PvApp
 import com.adf.pvjointage.R
 import com.adf.pvjointage.data.ExcelImporter
 import com.adf.pvjointage.data.PvHeader
+import com.adf.pvjointage.data.Repository
 import com.adf.pvjointage.databinding.ActivityMainBinding
+import com.adf.pvjointage.databinding.DialogCatalogueBinding
 import com.adf.pvjointage.databinding.DialogSchemaZoomBinding
 import com.adf.pvjointage.export.ExportManager
 import kotlinx.coroutines.flow.combine
@@ -94,6 +102,8 @@ class MainActivity : AppCompatActivity() {
             schemaGestureDetector.onTouchEvent(event)
             true
         }
+
+        binding.btnCatalogue.setOnClickListener { showCatalogueDialog() }
 
         observeBridesAndInspections()
     }
@@ -264,6 +274,114 @@ class MainActivity : AppCompatActivity() {
         }
         dialogBinding.btnFermerZoom.setOnClickListener { dialog.dismiss() }
         dialog.show()
+    }
+
+    private enum class CatalogueFilter { TOUS, COMPLETS, INCOMPLETS }
+
+    /** Fenêtre listant tout le catalogue (Unité × Famille → Items), avec filtre et navigation directe. */
+    private fun showCatalogueDialog() {
+        val dialogBinding = DialogCatalogueBinding.inflate(layoutInflater)
+        val dialog = Dialog(this, android.R.style.Theme_Black_NoTitleBar_Fullscreen)
+        dialog.setContentView(dialogBinding.root)
+        dialogBinding.btnFermerCatalogue.setOnClickListener { dialog.dismiss() }
+
+        lifecycleScope.launch {
+            val entries = repo.getCatalogueOverview()
+
+            fun render() {
+                val filter = when (dialogBinding.filterGroup.checkedRadioButtonId) {
+                    R.id.filterComplets -> CatalogueFilter.COMPLETS
+                    R.id.filterIncomplets -> CatalogueFilter.INCOMPLETS
+                    else -> CatalogueFilter.TOUS
+                }
+                buildCatalogueTable(dialogBinding.catalogueTable, entries, filter) { unite, famille, item ->
+                    navigateToItem(unite, famille, item)
+                    dialog.dismiss()
+                }
+            }
+
+            dialogBinding.filterGroup.setOnCheckedChangeListener { _, _ -> render() }
+            render()
+        }
+        dialog.show()
+    }
+
+    /** Construit dynamiquement le tableau Unité (lignes) × Famille (colonnes), items cliquables colorés selon leur complétude. */
+    private fun buildCatalogueTable(
+        table: TableLayout,
+        entries: List<Repository.CatalogueEntry>,
+        filter: CatalogueFilter,
+        onItemClick: (unite: String, famille: String, item: String) -> Unit
+    ) {
+        table.removeAllViews()
+        val filtered = when (filter) {
+            CatalogueFilter.TOUS -> entries
+            CatalogueFilter.COMPLETS -> entries.filter { it.complete }
+            CatalogueFilter.INCOMPLETS -> entries.filter { !it.complete }
+        }
+
+        if (filtered.isEmpty()) {
+            table.addView(TextView(this).apply {
+                text = getString(R.string.catalogue_vide)
+                setPadding(24, 24, 24, 24)
+            })
+            return
+        }
+
+        val unites = filtered.map { it.unite }.distinct().sorted()
+        val familles = filtered.map { it.famille }.distinct().sorted()
+
+        val headerRow = TableRow(this)
+        headerRow.addView(catalogueHeaderCell(""))
+        familles.forEach { headerRow.addView(catalogueHeaderCell(it)) }
+        table.addView(headerRow)
+
+        unites.forEach { unite ->
+            val row = TableRow(this)
+            row.addView(catalogueHeaderCell(unite))
+            familles.forEach { famille ->
+                val cell = LinearLayout(this).apply {
+                    orientation = LinearLayout.VERTICAL
+                    setPadding(12, 8, 12, 8)
+                }
+                filtered.filter { it.unite == unite && it.famille == famille }
+                    .sortedBy { it.item }
+                    .forEach { entry ->
+                        cell.addView(TextView(this@MainActivity).apply {
+                            text = entry.item
+                            setTextColor(if (entry.complete) Color.BLACK else Color.RED)
+                            textSize = 13f
+                            setPadding(6, 4, 6, 4)
+                            setOnClickListener { onItemClick(entry.unite, entry.famille, entry.item) }
+                        })
+                    }
+                row.addView(cell)
+            }
+            table.addView(row)
+        }
+    }
+
+    private fun catalogueHeaderCell(text: String): TextView = TextView(this).apply {
+        this.text = text
+        setTypeface(typeface, android.graphics.Typeface.BOLD)
+        setPadding(20, 14, 20, 14)
+        setBackgroundColor(ContextCompat.getColor(this@MainActivity, R.color.primary))
+        setTextColor(Color.WHITE)
+    }
+
+    /** Fait pointer les 3 sélecteurs (Unité/Famille/ITEM) directement sur cet item et rafraîchit l'écran. */
+    private fun navigateToItem(unite: String, famille: String, item: String) {
+        bridesJob?.cancel()
+        schemaJob?.cancel()
+        selectedUnite = unite
+        selectedFamille = famille
+        selectedItem = item
+        persistSelection()
+        observeUnites()
+        observeFamilles()
+        observeItems()
+        observeBridesAndInspections()
+        observeSchema()
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {

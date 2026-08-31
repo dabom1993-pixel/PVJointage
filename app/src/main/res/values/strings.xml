@@ -87,4 +87,13 @@
 
     <string name="schema_titre">SCHÉMA / PLAN DE L\'ÉQUIPEMENT</string>
     <string name="aucun_schema">Aucun schéma pour cet item</string>
+
+    <string name="btn_catalogue">Catalogue</string>
+    <string name="catalogue_titre">CATALOGUE DES ITEMS</string>
+    <string name="catalogue_filtrer">Filtrer :</string>
+    <string name="catalogue_tous">Tous</string>
+    <string name="catalogue_complets">Complets (100%)</string>
+    <string name="catalogue_incomplets">Incomplets</string>
+    <string name="catalogue_legende">Rouge = item non rempli à 100 %  ·  Noir = item complet</string>
+    <string name="catalogue_vide">Aucun item pour ce filtre</string>
 </resources>
