@@ -118,6 +118,9 @@ class ChampActivity : AppCompatActivity() {
 
                 binding.selJointDimension.setLabel("${getString(R.string.joint_dimension_centrage)} : DN ${b.dn} - PN ${b.pn}")
                 binding.selJointMatiere.setLabel("${getString(R.string.joint_matiere_conforme)} : ${b.matiereJoint}")
+                if (b.neufBoulon.isNotBlank()) {
+                    binding.selBoulonNeuves.setLabel("${getString(R.string.boulon_neuves)} : ${b.neufBoulon}")
+                }
                 binding.selBoulonRondelles.setLabel("${getString(R.string.boulon_rondelles)} : ${b.rondelle}")
                 binding.selBoulonLongueur.setLabel(longueurDiametreLabel(b))
                 binding.selBoulonMatiere.setLabel("${getString(R.string.boulon_matiere)} : ${b.matiereBoulon}")

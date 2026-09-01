@@ -275,7 +275,7 @@ class ExportManager(private val context: Context, private val repo: Repository) 
 
         // BOULONNERIE
         y = drawSectionBar(canvas, marginX, y, contentWidth, "BOULONNERIE")
-        y = drawEtatRow(canvas, marginX, y, contentWidth, "Neuves", insp?.boulonNeuves)
+        y = drawEtatRow(canvas, marginX, y, contentWidth, refLabel("Neuves", bride.neufBoulon), insp?.boulonNeuves)
         y = drawEtatRow(canvas, marginX, y, contentWidth, refLabel("Rondelles", bride.rondelle), insp?.boulonRondelles)
         y = drawEtatRow(canvas, marginX, y, contentWidth, "Equilibrage", insp?.boulonEquilibrage)
         y = drawEtatRow(canvas, marginX, y, contentWidth, "Graissage", insp?.boulonGraissage)

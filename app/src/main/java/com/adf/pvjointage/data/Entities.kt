@@ -39,7 +39,10 @@ data class BrideCatalog(
     // Colonnes "LgB" / "DiamB" (longueur et diamètre de boulon de référence), ajoutées à
     // l'onglet Excel après le lancement du projet — vides pour un import qui ne les a pas.
     val longueurBoulon: String = "",
-    val diametreBoulon: String = ""
+    val diametreBoulon: String = "",
+    // Colonne "NeufB" (boulonnerie neuve de référence : "Oui"/"Non"), ajoutée après coup —
+    // vide pour un import qui ne l'a pas.
+    val neufBoulon: String = ""
 )
 
 /**
