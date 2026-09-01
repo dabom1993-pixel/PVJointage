@@ -115,8 +115,8 @@ class ExportManager(private val context: Context, private val repo: Repository) 
         var pageNumber = startPageNumber
 
         val leftX = 20f
-        val leftWidth = 400f
-        val rightX = 440f
+        val leftWidth = 450f
+        val rightX = 490f
         val rightWidth = pageWidth - 20f - rightX
 
         var page = doc.startPage(PdfDocument.PageInfo.Builder(pageWidth, pageHeight, ++pageNumber).create())
@@ -146,28 +146,12 @@ class ExportManager(private val context: Context, private val repo: Repository) 
         drawSeg(item, valuePaint)
         y += 14f
 
-        // Schéma sur la moitié droite (une seule fois, sur la première page).
-        val schemaTitlePaint = Paint().apply { textSize = 10f; isFakeBoldText = true; color = Color.WHITE }
-        canvas.drawRect(rightX, y, rightX + rightWidth, y + 18f, Paint().apply { color = colorPrimary })
-        canvas.drawText("SCHÉMA / PLAN DE L'ÉQUIPEMENT", rightX + 6f, y + 13f, schemaTitlePaint)
-        val schemaBoxTop = y + 18f
-        val schemaBoxBottom = pageHeight - 20f
-        val schemaBoxRect = RectF(rightX, schemaBoxTop, rightX + rightWidth, schemaBoxBottom)
-        canvas.drawRect(schemaBoxRect, Paint().apply { color = Color.WHITE; style = Paint.Style.FILL })
-        canvas.drawRect(schemaBoxRect, Paint().apply { color = colorEnAttente; style = Paint.Style.STROKE; strokeWidth = 1f })
-        val schemaBitmap = schema?.let { loadBitmapFromPath(it.filePath, schemaBoxRect.width().toInt(), schemaBoxRect.height().toInt()) }
-        if (schemaBitmap != null) {
-            val dst = fitInside(schemaBitmap.width, schemaBitmap.height, schemaBoxRect.width() - 16f, schemaBoxRect.height() - 16f)
-            val left = schemaBoxRect.centerX() - dst.first / 2
-            val top = schemaBoxRect.centerY() - dst.second / 2
-            canvas.drawBitmap(schemaBitmap, null, RectF(left, top, left + dst.first, top + dst.second), null)
-        } else {
-            val emptyPaint = Paint().apply { textSize = 10f; color = colorEnAttente; textAlign = Paint.Align.CENTER }
-            canvas.drawText("Aucun schéma pour cet item", schemaBoxRect.centerX(), schemaBoxRect.centerY(), emptyPaint)
-        }
+        // Schéma sur la moitié droite : toujours affiché à droite, sur toutes les pages
+        // de l'aperçu (première page et pages "suite" en cas de liste de brides longue).
+        drawSchemaPanel(canvas, rightX, rightWidth, y, pageHeight - 20f, schema)
 
         // Tableau des brides sur la moitié gauche.
-        val headerPaint = Paint().apply { textSize = 9f; isFakeBoldText = true; color = Color.WHITE }
+        val headerPaint = Paint().apply { textSize = 8.2f; isFakeBoldText = true; color = Color.WHITE }
         val cellPaint = Paint().apply { textSize = 9f; color = Color.BLACK }
         val cols = tableColumns(leftX, leftWidth)
 
@@ -175,16 +159,18 @@ class ExportManager(private val context: Context, private val repo: Repository) 
             c.drawRect(leftX, top, leftX + leftWidth, top + 16f, Paint().apply { color = colorPrimary })
             drawCellText(c, "Rep.", cols[0], top, top + 16f, headerPaint, Paint.Align.LEFT)
             drawCellText(c, "Désignation", cols[1], top, top + 16f, headerPaint, Paint.Align.LEFT)
-            drawCellText(c, "Etiq.", cols[2], top, top + 16f, headerPaint, Paint.Align.CENTER)
+            drawCellText(c, "Etiquette", cols[2], top, top + 16f, headerPaint, Paint.Align.CENTER)
             drawCellText(c, "Joint", cols[3], top, top + 16f, headerPaint, Paint.Align.CENTER)
-            drawCellText(c, "Boul.", cols[4], top, top + 16f, headerPaint, Paint.Align.CENTER)
-            drawCellText(c, "Assem.", cols[5], top, top + 16f, headerPaint, Paint.Align.CENTER)
+            drawCellText(c, "Boulonnerie", cols[4], top, top + 16f, headerPaint, Paint.Align.CENTER)
+            drawCellText(c, "Assemblage", cols[5], top, top + 16f, headerPaint, Paint.Align.CENTER)
             drawCellText(c, "Conforme", cols[6], top, top + 16f, headerPaint, Paint.Align.CENTER)
             return top + 16f
         }
 
         var tableY = drawTableHeader(canvas, y)
-        val rowHeight = 16f
+        // Deux lignes par bride (désignation + DN/PN/matière du joint en dessous) : la
+        // désignation dispose ainsi de sa propre ligne et n'est jamais masquée par la colonne suivante.
+        val rowHeight = 26f
 
         for (b in brides) {
             if (tableY + rowHeight > pageHeight - 20f) {
@@ -193,18 +179,24 @@ class ExportManager(private val context: Context, private val repo: Repository) 
                 canvas = page.canvas
                 canvas.drawColor(colorBackground)
                 val bannerBottom = drawBanner(canvas, pageWidth, "PV de JOINTAGE — suite")
+                drawSchemaPanel(canvas, rightX, rightWidth, bannerBottom + 16f, pageHeight - 20f, schema)
                 tableY = drawTableHeader(canvas, bannerBottom + 16f)
             }
             val insp = inspections[b.rep]
             val (etiquette, joint, boulonnerie, assemblage, global) = conformites(insp)
 
             drawCellText(canvas, b.rep, cols[0], tableY, tableY + rowHeight, cellPaint, Paint.Align.LEFT)
-            drawCellText(canvas, b.designation, cols[1], tableY, tableY + rowHeight, cellPaint, Paint.Align.LEFT)
+            val sousTitre = listOfNotNull(
+                b.dn.takeIf { it.isNotBlank() }?.let { "DN $it" },
+                b.pn.takeIf { it.isNotBlank() }?.let { "PN $it" },
+                b.matiereJoint.takeIf { it.isNotBlank() }
+            ).joinToString(" · ")
+            drawDesignationCell(canvas, b.designation, sousTitre, cols[1], tableY, tableY + rowHeight)
             drawStatusPill(canvas, cols[2], tableY, rowHeight, etiquette)
             drawStatusPill(canvas, cols[3], tableY, rowHeight, joint)
             drawStatusPill(canvas, cols[4], tableY, rowHeight, boulonnerie)
             drawStatusPill(canvas, cols[5], tableY, rowHeight, assemblage)
-            drawStatusPill(canvas, cols[6], tableY, rowHeight, global)
+            drawStatusPill(canvas, cols[6], tableY, rowHeight, global, fullText = true)
 
             tableY += rowHeight
         }
@@ -213,9 +205,29 @@ class ExportManager(private val context: Context, private val repo: Repository) 
         return pageNumber
     }
 
+    /** Bandeau "SCHÉMA / PLAN DE L'ÉQUIPEMENT" + image, sur la partie droite de la page, entre [top] et [bottom]. */
+    private fun drawSchemaPanel(canvas: Canvas, rightX: Float, rightWidth: Float, top: Float, bottom: Float, schema: ItemSchema?) {
+        val schemaTitlePaint = Paint().apply { textSize = 10f; isFakeBoldText = true; color = Color.WHITE }
+        canvas.drawRect(rightX, top, rightX + rightWidth, top + 18f, Paint().apply { color = colorPrimary })
+        canvas.drawText("SCHÉMA / PLAN DE L'ÉQUIPEMENT", rightX + 6f, top + 13f, schemaTitlePaint)
+        val schemaBoxRect = RectF(rightX, top + 18f, rightX + rightWidth, bottom)
+        canvas.drawRect(schemaBoxRect, Paint().apply { color = Color.WHITE; style = Paint.Style.FILL })
+        canvas.drawRect(schemaBoxRect, Paint().apply { color = colorEnAttente; style = Paint.Style.STROKE; strokeWidth = 1f })
+        val schemaBitmap = schema?.let { loadBitmapFromPath(it.filePath, schemaBoxRect.width().toInt(), schemaBoxRect.height().toInt()) }
+        if (schemaBitmap != null) {
+            val dst = fitInside(schemaBitmap.width, schemaBitmap.height, schemaBoxRect.width() - 16f, schemaBoxRect.height() - 16f)
+            val left = schemaBoxRect.centerX() - dst.first / 2
+            val imgTop = schemaBoxRect.centerY() - dst.second / 2
+            canvas.drawBitmap(schemaBitmap, null, RectF(left, imgTop, left + dst.first, imgTop + dst.second), null)
+        } else {
+            val emptyPaint = Paint().apply { textSize = 10f; color = colorEnAttente; textAlign = Paint.Align.CENTER }
+            canvas.drawText("Aucun schéma pour cet item", schemaBoxRect.centerX(), schemaBoxRect.centerY(), emptyPaint)
+        }
+    }
+
     /** Colonnes (gauche, droite) du tableau, proportionnelles à la largeur disponible. */
     private fun tableColumns(startX: Float, totalWidth: Float): List<Pair<Float, Float>> {
-        val weights = floatArrayOf(0.6f, 1.6f, 0.9f, 0.9f, 0.9f, 0.9f, 1f)
+        val weights = floatArrayOf(0.5f, 2.4f, 0.85f, 0.85f, 1f, 1f, 1.3f)
         val sum = weights.sum()
         var x = startX
         val result = mutableListOf<Pair<Float, Float>>()
@@ -440,6 +452,28 @@ class ExportManager(private val context: Context, private val repo: Repository) 
         return y + rowHeight
     }
 
+    /**
+     * Cellule "Désignation" sur deux lignes : le libellé en gras, puis DN/PN/matière du joint
+     * juste en dessous, en plus petit et grisé. Chaque ligne est réduite avec une ellipse si
+     * elle dépasse la largeur de la colonne — jamais laissée à déborder (et donc être masquée
+     * par la colonne suivante, qui est dessinée par-dessus).
+     */
+    private fun drawDesignationCell(canvas: Canvas, designation: String, sousTitre: String, col: Pair<Float, Float>, top: Float, bottom: Float) {
+        val maxWidth = (col.second - col.first - 6f).coerceAtLeast(10f)
+        val titrePaint = TextPaint().apply { color = Color.BLACK; textSize = 9f; isFakeBoldText = true }
+        val titre = TextUtils.ellipsize(designation.ifBlank { "—" }, titrePaint, maxWidth, TextUtils.TruncateAt.END)
+        if (sousTitre.isBlank()) {
+            val fm = titrePaint.fontMetrics
+            canvas.drawText(titre, 0, titre.length, col.first + 3f, (top + bottom) / 2 - (fm.ascent + fm.descent) / 2, titrePaint)
+        } else {
+            val sousTitrePaint = TextPaint().apply { color = Color.parseColor("#5A6B7A"); textSize = 7.5f }
+            val sousTitreEllipse = TextUtils.ellipsize(sousTitre, sousTitrePaint, maxWidth, TextUtils.TruncateAt.END)
+            val midY = (top + bottom) / 2
+            canvas.drawText(titre, 0, titre.length, col.first + 3f, midY - 1f, titrePaint)
+            canvas.drawText(sousTitreEllipse, 0, sousTitreEllipse.length, col.first + 3f, midY + 9f, sousTitrePaint)
+        }
+    }
+
     private fun drawCellText(canvas: Canvas, text: String, col: Pair<Float, Float>, top: Float, bottom: Float, paint: Paint, align: Paint.Align) {
         val p = Paint(paint).apply { textAlign = align }
         val fm = p.fontMetrics
@@ -452,7 +486,8 @@ class ExportManager(private val context: Context, private val repo: Repository) 
         canvas.drawText(text, tx, ty, p)
     }
 
-    private fun drawStatusPill(canvas: Canvas, col: Pair<Float, Float>, top: Float, rowHeight: Float, c: Conformite) {
+    /** [fullText] : mots entiers ("CONFORME"/"NON CONFORME"/"EN ATTENTE"), utilisé pour la colonne "Conforme". */
+    private fun drawStatusPill(canvas: Canvas, col: Pair<Float, Float>, top: Float, rowHeight: Float, c: Conformite, fullText: Boolean = false) {
         val rect = RectF(col.first + 2f, top + 1f, col.second - 2f, top + rowHeight - 1f)
         val bg = when (c) {
             Conformite.CONFORME -> colorConforme
@@ -460,12 +495,20 @@ class ExportManager(private val context: Context, private val repo: Repository) 
             Conformite.EN_ATTENTE -> colorEnAttente
         }
         canvas.drawRect(rect, Paint().apply { color = bg })
-        val text = when (c) {
-            Conformite.CONFORME -> "OK"
-            Conformite.NON_CONFORME -> "NC"
-            Conformite.EN_ATTENTE -> "…"
+        val text = if (fullText) {
+            when (c) {
+                Conformite.CONFORME -> "CONFORME"
+                Conformite.NON_CONFORME -> "NON CONFORME"
+                Conformite.EN_ATTENTE -> "EN ATTENTE"
+            }
+        } else {
+            when (c) {
+                Conformite.CONFORME -> "OK"
+                Conformite.NON_CONFORME -> "NC"
+                Conformite.EN_ATTENTE -> "…"
+            }
         }
-        val textPaint = Paint().apply { color = Color.WHITE; textSize = 8.5f; textAlign = Paint.Align.CENTER }
+        val textPaint = Paint().apply { color = Color.WHITE; textSize = if (fullText) 7.5f else 8.5f; isFakeBoldText = fullText; textAlign = Paint.Align.CENTER }
         val fm = textPaint.fontMetrics
         canvas.drawText(text, rect.centerX(), rect.centerY() - (fm.ascent + fm.descent) / 2, textPaint)
     }
