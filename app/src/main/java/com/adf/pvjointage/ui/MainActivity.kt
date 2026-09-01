@@ -32,6 +32,7 @@ import com.adf.pvjointage.data.PvHeader
 import com.adf.pvjointage.data.Repository
 import com.adf.pvjointage.databinding.ActivityMainBinding
 import com.adf.pvjointage.databinding.DialogCatalogueBinding
+import com.adf.pvjointage.databinding.DialogPdfExportBinding
 import com.adf.pvjointage.databinding.DialogSchemaZoomBinding
 import com.adf.pvjointage.export.ExportManager
 import kotlinx.coroutines.flow.combine
@@ -413,31 +414,157 @@ class MainActivity : AppCompatActivity() {
             return true
         }
         if (item.itemId == R.id.action_export) {
-            val options = arrayOf("Excel (mettre à jour le fichier importé, tous les items)", "PDF (item courant, avec photos)")
+            val options = arrayOf(getString(R.string.export_option_excel), getString(R.string.export_option_pdf))
             AlertDialog.Builder(this)
                 .setTitle(getString(R.string.btn_export))
                 .setItems(options) { _, which ->
-                    lifecycleScope.launch {
-                        try {
-                            val path = if (which == 0) {
-                                repo.exportNativeExcel()
-                            } else {
-                                if (selectedUnite.isBlank() || selectedItem.isBlank()) {
-                                    android.widget.Toast.makeText(this@MainActivity, getString(R.string.export_erreur, "sélectionnez d'abord un item"), android.widget.Toast.LENGTH_LONG).show()
-                                    return@launch
-                                }
-                                ExportManager(this@MainActivity, repo).exportPdf(selectedUnite, selectedFamille, selectedItem)
+                    if (which == 0) {
+                        lifecycleScope.launch {
+                            try {
+                                val path = repo.exportNativeExcel()
+                                android.widget.Toast.makeText(this@MainActivity, getString(R.string.export_done, path), android.widget.Toast.LENGTH_LONG).show()
+                            } catch (e: Exception) {
+                                android.widget.Toast.makeText(this@MainActivity, getString(R.string.export_erreur, e.message ?: ""), android.widget.Toast.LENGTH_LONG).show()
                             }
-                            android.widget.Toast.makeText(this@MainActivity, getString(R.string.export_done, path), android.widget.Toast.LENGTH_LONG).show()
-                        } catch (e: Exception) {
-                            android.widget.Toast.makeText(this@MainActivity, getString(R.string.export_erreur, e.message ?: ""), android.widget.Toast.LENGTH_LONG).show()
                         }
+                    } else {
+                        showPdfExportDialog()
                     }
                 }
                 .show()
             return true
         }
         return super.onOptionsItemSelected(item)
+    }
+
+    private val pdfExportSelection = mutableSetOf<Triple<String, String, String>>()
+
+    /** Fenêtre d'impression PDF (façon "Filtre") : sélection multiple d'items, impression groupée (1 PDF par item). */
+    private fun showPdfExportDialog() {
+        pdfExportSelection.clear()
+        val dialogBinding = DialogPdfExportBinding.inflate(layoutInflater)
+        val dialog = Dialog(this, android.R.style.Theme_Black_NoTitleBar_Fullscreen)
+        dialog.setContentView(dialogBinding.root)
+        dialogBinding.btnFermerPdfExport.setOnClickListener { dialog.dismiss() }
+
+        lifecycleScope.launch {
+            val entries = repo.getCatalogueOverview()
+
+            fun render() {
+                buildPdfExportTable(dialogBinding.pdfExportTable, entries) { render() }
+                dialogBinding.tvSelectionCount.text = getString(R.string.pdf_export_selection_count, pdfExportSelection.size)
+            }
+
+            dialogBinding.btnToutSelectionner.setOnClickListener {
+                pdfExportSelection.clear()
+                entries.forEach { pdfExportSelection.add(Triple(it.unite, it.famille, it.item)) }
+                render()
+            }
+            dialogBinding.btnToutDeselectionner.setOnClickListener {
+                pdfExportSelection.clear()
+                render()
+            }
+            dialogBinding.btnImprimer.setOnClickListener {
+                if (pdfExportSelection.isEmpty()) {
+                    android.widget.Toast.makeText(this@MainActivity, R.string.pdf_export_aucune_selection, android.widget.Toast.LENGTH_LONG).show()
+                    return@setOnClickListener
+                }
+                val selection = pdfExportSelection.toList()
+                dialog.dismiss()
+                printSelectedItems(selection)
+            }
+
+            render()
+        }
+        dialog.show()
+    }
+
+    /** Grille Unité (lignes) × Famille (colonnes) : touche = bascule la sélection (item seul, ou tous les items d'une famille/unité). */
+    private fun buildPdfExportTable(
+        table: TableLayout,
+        entries: List<Repository.CatalogueEntry>,
+        onChanged: () -> Unit
+    ) {
+        table.removeAllViews()
+        if (entries.isEmpty()) {
+            table.addView(TextView(this).apply {
+                text = getString(R.string.catalogue_vide)
+                setPadding(24, 24, 24, 24)
+            })
+            return
+        }
+
+        val unites = entries.map { it.unite }.distinct().sorted()
+        val familles = entries.map { it.famille }.distinct().sorted()
+
+        fun toggleGroup(itemsGroupe: List<Triple<String, String, String>>) {
+            val toutSelectionne = itemsGroupe.isNotEmpty() && itemsGroupe.all { it in pdfExportSelection }
+            if (toutSelectionne) pdfExportSelection.removeAll(itemsGroupe.toSet()) else pdfExportSelection.addAll(itemsGroupe)
+            onChanged()
+        }
+
+        val headerRow = TableRow(this)
+        headerRow.addView(catalogueHeaderCell(""))
+        familles.forEach { famille ->
+            headerRow.addView(catalogueHeaderCell(famille).apply {
+                setOnClickListener {
+                    toggleGroup(entries.filter { it.famille == famille }.map { Triple(it.unite, it.famille, it.item) })
+                }
+            })
+        }
+        table.addView(headerRow)
+
+        unites.forEach { unite ->
+            val row = TableRow(this)
+            row.addView(catalogueHeaderCell(unite).apply {
+                setOnClickListener {
+                    toggleGroup(entries.filter { it.unite == unite }.map { Triple(it.unite, it.famille, it.item) })
+                }
+            })
+            familles.forEach { famille ->
+                val cell = LinearLayout(this).apply {
+                    orientation = LinearLayout.VERTICAL
+                    setPadding(12, 8, 12, 8)
+                }
+                entries.filter { it.unite == unite && it.famille == famille }
+                    .sortedBy { it.item }
+                    .forEach { entry ->
+                        val key = Triple(entry.unite, entry.famille, entry.item)
+                        val selectionne = key in pdfExportSelection
+                        cell.addView(TextView(this@MainActivity).apply {
+                            text = entry.item
+                            setTextColor(if (selectionne) ContextCompat.getColor(this@MainActivity, R.color.conforme) else Color.BLACK)
+                            setTypeface(typeface, if (selectionne) android.graphics.Typeface.BOLD else android.graphics.Typeface.NORMAL)
+                            textSize = 13f
+                            setPadding(6, 4, 6, 4)
+                            setOnClickListener {
+                                if (key in pdfExportSelection) pdfExportSelection.remove(key) else pdfExportSelection.add(key)
+                                onChanged()
+                            }
+                        })
+                    }
+                row.addView(cell)
+            }
+            table.addView(row)
+        }
+    }
+
+    /** Génère séquentiellement un PDF par item de [selection] (dossier files/exports). */
+    private fun printSelectedItems(selection: List<Triple<String, String, String>>) {
+        android.widget.Toast.makeText(this, R.string.pdf_export_en_cours, android.widget.Toast.LENGTH_SHORT).show()
+        lifecycleScope.launch {
+            var count = 0
+            try {
+                val exportManager = ExportManager(this@MainActivity, repo)
+                for ((unite, famille, item) in selection) {
+                    exportManager.exportPdf(unite, famille, item)
+                    count++
+                }
+                android.widget.Toast.makeText(this@MainActivity, getString(R.string.pdf_export_termine, count), android.widget.Toast.LENGTH_LONG).show()
+            } catch (e: Exception) {
+                android.widget.Toast.makeText(this@MainActivity, getString(R.string.export_erreur, e.message ?: ""), android.widget.Toast.LENGTH_LONG).show()
+            }
+        }
     }
 
     /**

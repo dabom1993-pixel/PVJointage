@@ -439,8 +439,8 @@ class ExportManager(private val context: Context, private val repo: Repository) 
         val pillWidth = 50f
         val pillRect = RectF(x + width - pillWidth, y + 2f, x + width, y + rowHeight - 2f)
         val (bg, text) = when (code) {
-            "O" -> colorConforme to "OUI"
-            "N" -> colorNonConforme to "NON"
+            "O" -> colorConforme to "C"
+            "N" -> colorNonConforme to "NC"
             "A" -> colorPrimary to "A"
             else -> colorEnAttente to "—"
         }
@@ -503,7 +503,7 @@ class ExportManager(private val context: Context, private val repo: Repository) 
             }
         } else {
             when (c) {
-                Conformite.CONFORME -> "OK"
+                Conformite.CONFORME -> "C"
                 Conformite.NON_CONFORME -> "NC"
                 Conformite.EN_ATTENTE -> "…"
             }

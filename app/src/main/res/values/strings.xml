@@ -98,4 +98,16 @@
     <string name="catalogue_incomplets">Incomplets</string>
     <string name="catalogue_legende">Rouge = item non rempli à 100 %  ·  Vert = item complet</string>
     <string name="catalogue_vide">Aucun item pour ce filtre</string>
+
+    <string name="export_option_excel">Excel - Mettre à jour le fichier importé</string>
+    <string name="export_option_pdf">PDF - Impression des items</string>
+    <string name="pdf_export_titre">IMPRESSION PDF</string>
+    <string name="pdf_export_legende">Touchez un item pour le sélectionner (vert). Touchez une Famille ou une Unité pour sélectionner tous ses items.</string>
+    <string name="pdf_export_tout_selectionner">Tout sélectionner</string>
+    <string name="pdf_export_tout_deselectionner">Tout désélectionner</string>
+    <string name="pdf_export_selection_count">%1$d item(s) sélectionné(s)</string>
+    <string name="btn_impression">Impression</string>
+    <string name="pdf_export_aucune_selection">Sélectionnez au moins un item à imprimer.</string>
+    <string name="pdf_export_en_cours">Génération des PDF en cours…</string>
+    <string name="pdf_export_termine">%1$d PDF générés dans le dossier exports.</string>
 </resources>
