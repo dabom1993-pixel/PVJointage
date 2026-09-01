@@ -403,16 +403,19 @@ class ExportManager(private val context: Context, private val repo: Repository) 
         return "$label : $diam x $longueur"
     }
 
-    /** Ligne de contrôle précédée d'un petit schéma (ASSEMBLAGE : parallélisme / excentration). */
+    /** Ligne de contrôle suivie d'un petit schéma à droite (ASSEMBLAGE : parallélisme / excentration). */
     private fun drawEtatRowWithImage(canvas: Canvas, x: Float, y: Float, width: Float, iconRes: Int, label: String, code: String?): Float {
-        val imgW = 58f
-        val imgH = 36f
+        val imgW = 26f
+        val imgH = 16f
+        val gap = 6f
+        // Le texte + la pastille O/N/A gardent leur mise en page habituelle, juste rétrécie pour laisser la place au schéma.
+        val bottom = drawEtatRow(canvas, x, y, width - imgW - gap, label, code)
+        val imgTop = y + (bottom - y - imgH) / 2f
         androidx.core.content.ContextCompat.getDrawable(context, iconRes)?.let { drawable ->
-            drawable.setBounds(x.toInt(), y.toInt(), (x + imgW).toInt(), (y + imgH).toInt())
+            drawable.setBounds((x + width - imgW).toInt(), imgTop.toInt(), (x + width).toInt(), (imgTop + imgH).toInt())
             drawable.draw(canvas)
         }
-        val bottom = drawEtatRow(canvas, x + imgW + 8f, y, width - imgW - 8f, label, code)
-        return maxOf(bottom, y + imgH + 4f)
+        return bottom
     }
 
     /** Une ligne de contrôle "libellé ................ [OUI/NON/A]" avec pastille colorée. */
