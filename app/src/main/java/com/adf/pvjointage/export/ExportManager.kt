@@ -262,27 +262,31 @@ class ExportManager(private val context: Context, private val repo: Repository) 
 
         // ETIQUETTE
         y = drawSectionBar(canvas, marginX, y, contentWidth, "ETIQUETTE")
-        y = drawTwoEtatRow(canvas, marginX, y, contentWidth, "Etiquette mise et serrée", insp?.etiMiseSerree, "Nom (numéro GTIS) + Date lisible", insp?.etiNomDateLisible)
+        y = drawEtatRow(canvas, marginX, y, contentWidth, "Etiquette mise et serrée", insp?.etiMiseSerree)
+        y = drawEtatRow(canvas, marginX, y, contentWidth, "Nom (numéro GTIS) + Date lisible", insp?.etiNomDateLisible)
         y += 8f
 
-        // JOINT
+        // JOINT — une ligne par contrôle, valeurs de référence intégrées au libellé.
         y = drawSectionBar(canvas, marginX, y, contentWidth, "JOINT")
-        y = drawRefBoxRow(canvas, marginX, y, contentWidth, listOf("DN" to bride.dn, "PN" to bride.pn, "Matière" to bride.matiereJoint))
-        y = drawTwoEtatRow(canvas, marginX, y, contentWidth, "Matière conforme au plan/spec", insp?.jointMatiereConforme, "Dimension & centrage", insp?.jointDimensionCentrage)
-        y = drawTwoEtatRow(canvas, marginX, y, contentWidth, "Aspect du joint neuf", insp?.jointAspectNeuf, null, null)
+        y = drawEtatRow(canvas, marginX, y, contentWidth, "Dimension & Centrage : DN ${bride.dn} - PN ${bride.pn}", insp?.jointDimensionCentrage)
+        y = drawEtatRow(canvas, marginX, y, contentWidth, refLabel("Matière conforme au plan/spec", bride.matiereJoint), insp?.jointMatiereConforme)
+        y = drawEtatRow(canvas, marginX, y, contentWidth, "Aspect du joint neuf", insp?.jointAspectNeuf)
         y += 8f
 
         // BOULONNERIE
         y = drawSectionBar(canvas, marginX, y, contentWidth, "BOULONNERIE")
-        y = drawRefBoxRow(canvas, marginX, y, contentWidth, listOf("Rondelle" to bride.rondelle, "Matière" to bride.matiereBoulon))
-        y = drawTwoEtatRow(canvas, marginX, y, contentWidth, "Neuves", insp?.boulonNeuves, "Rondelles", insp?.boulonRondelles)
-        y = drawTwoEtatRow(canvas, marginX, y, contentWidth, "Equilibrage", insp?.boulonEquilibrage, "Graissage", insp?.boulonGraissage)
-        y = drawTwoEtatRow(canvas, marginX, y, contentWidth, "Longueur / Diamètre", insp?.boulonLongueurDiametre, "Matière", insp?.boulonMatiere)
+        y = drawEtatRow(canvas, marginX, y, contentWidth, "Neuves", insp?.boulonNeuves)
+        y = drawEtatRow(canvas, marginX, y, contentWidth, refLabel("Rondelles", bride.rondelle), insp?.boulonRondelles)
+        y = drawEtatRow(canvas, marginX, y, contentWidth, "Equilibrage", insp?.boulonEquilibrage)
+        y = drawEtatRow(canvas, marginX, y, contentWidth, "Graissage", insp?.boulonGraissage)
+        y = drawEtatRow(canvas, marginX, y, contentWidth, longueurDiametreLabel(bride), insp?.boulonLongueurDiametre)
+        y = drawEtatRow(canvas, marginX, y, contentWidth, refLabel("Matière boulonnerie", bride.matiereBoulon), insp?.boulonMatiere)
         y += 8f
 
-        // ASSEMBLAGE
+        // ASSEMBLAGE — schéma de mesure à côté de chaque contrôle.
         y = drawSectionBar(canvas, marginX, y, contentWidth, "ASSEMBLAGE")
-        y = drawTwoEtatRow(canvas, marginX, y, contentWidth, "Parallélisme", insp?.assemblageParallelisme, "Excentration", insp?.assemblageExcentration)
+        y = drawEtatRowWithImage(canvas, marginX, y, contentWidth, R.drawable.ic_parallelisme, "Parallélisme", insp?.assemblageParallelisme)
+        y = drawEtatRowWithImage(canvas, marginX, y, contentWidth, R.drawable.ic_excentration, "Excentration", insp?.assemblageExcentration)
         y += 8f
 
         // REMARQUE
@@ -387,26 +391,28 @@ class ExportManager(private val context: Context, private val repo: Repository) 
         canvas.drawText(field.second, boxRect.centerX(), boxRect.centerY() - (fm.ascent + fm.descent) / 2, valuePaint)
     }
 
-    /**
-     * Une ligne de 2 à 3 valeurs de référence en boîte bleu clair (DN/PN/Matière, Rondelle/Matière...),
-     * libellé et boîte côte à côte sur la même ligne — même principe que LOCALISATION.
-     */
-    private fun drawRefBoxRow(canvas: Canvas, x: Float, y: Float, width: Float, fields: List<Pair<String, String>>): Float {
-        val rowHeight = 19f
-        val colWidth = width / fields.size
-        fields.forEachIndexed { i, field ->
-            val colX = x + i * colWidth
-            drawInfoField(canvas, colX, colX + 46f, colWidth - 52f, y, rowHeight, field)
-        }
-        return y + rowHeight
+    /** "{base} : {value}" si [value] est renseignée, sinon [base] seul. */
+    private fun refLabel(base: String, value: String): String = if (value.isNotBlank()) "$base : $value" else base
+
+    /** "Longueur / Diamètre : M{diamètre} x {longueur}" — colonnes de référence optionnelles ("LgB"/"DiamB"). */
+    private fun longueurDiametreLabel(b: BrideCatalog): String {
+        val label = "Longueur / Diamètre"
+        if (b.diametreBoulon.isBlank() && b.longueurBoulon.isBlank()) return label
+        val diam = if (b.diametreBoulon.isNotBlank()) "M${b.diametreBoulon}" else "M?"
+        val longueur = b.longueurBoulon.ifBlank { "?" }
+        return "$label : $diam x $longueur"
     }
 
-    /** Deux lignes de contrôle côte à côte (OUI vert / NON rouge / — gris), comme sur le modèle B-Champ. */
-    private fun drawTwoEtatRow(canvas: Canvas, x: Float, y: Float, width: Float, leftLabel: String, leftCode: String?, rightLabel: String?, rightCode: String?): Float {
-        val half = width / 2
-        val bottomLeft = drawEtatRow(canvas, x, y, half - 6f, leftLabel, leftCode)
-        val bottomRight = if (rightLabel != null) drawEtatRow(canvas, x + half + 6f, y, half - 6f, rightLabel, rightCode) else bottomLeft
-        return maxOf(bottomLeft, bottomRight)
+    /** Ligne de contrôle précédée d'un petit schéma (ASSEMBLAGE : parallélisme / excentration). */
+    private fun drawEtatRowWithImage(canvas: Canvas, x: Float, y: Float, width: Float, iconRes: Int, label: String, code: String?): Float {
+        val imgW = 58f
+        val imgH = 36f
+        androidx.core.content.ContextCompat.getDrawable(context, iconRes)?.let { drawable ->
+            drawable.setBounds(x.toInt(), y.toInt(), (x + imgW).toInt(), (y + imgH).toInt())
+            drawable.draw(canvas)
+        }
+        val bottom = drawEtatRow(canvas, x + imgW + 8f, y, width - imgW - 8f, label, code)
+        return maxOf(bottom, y + imgH + 4f)
     }
 
     /** Une ligne de contrôle "libellé ................ [OUI/NON/A]" avec pastille colorée. */

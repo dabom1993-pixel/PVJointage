@@ -131,7 +131,10 @@ class ExcelImporter(private val context: Context) {
                                             pn = rowValues[cols["pn"]]?.trim().orEmpty(),
                                             matiereJoint = rowValues[cols["matierej"]]?.trim().orEmpty(),
                                             rondelle = rowValues[cols["rondelle"]]?.trim().orEmpty(),
-                                            matiereBoulon = rowValues[cols["matiereb"]]?.trim().orEmpty()
+                                            matiereBoulon = rowValues[cols["matiereb"]]?.trim().orEmpty(),
+                                            // Colonnes optionnelles : absentes des fichiers plus anciens.
+                                            longueurBoulon = rowValues[cols["lgb"]]?.trim().orEmpty(),
+                                            diametreBoulon = rowValues[cols["diamb"]]?.trim().orEmpty()
                                         )
                                     )
                                 }

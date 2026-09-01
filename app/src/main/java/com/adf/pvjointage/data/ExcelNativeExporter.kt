@@ -18,30 +18,27 @@ import javax.xml.transform.stream.StreamResult
 
 /**
  * Réécrit directement le classeur Excel de référence (celui importé via "Importer") : remplit
- * les colonnes K à W (contrôles O/N/A saisis sur la tablette) de chaque bride, tous items
+ * les colonnes de contrôle (O/N/A saisis sur la tablette) de chaque bride, tous items
  * confondus, sans passer par un fichier CSV intermédiaire.
  *
+ * Les colonnes sont retrouvées par leur libellé (Mise/Nom/MatJ/Dim/...), pas par une lettre
+ * fixe : l'onglet source a déjà changé de disposition une fois (2 colonnes "LgB"/"DiamB"
+ * insérées avant "MatièreB", décalant tout ce qui suit) et retrouvera sans doute d'autres
+ * colonnes à l'avenir.
+ *
  * Le fichier de référence lui-même n'est jamais modifié : chaque export en repart et produit
- * une nouvelle copie à jour (mêmes macros/mise en forme, seules les cellules K..W changent).
+ * une nouvelle copie à jour (mêmes macros/mise en forme, seules les cellules de contrôle changent).
  */
 class ExcelNativeExporter(private val context: Context) {
 
     class NativeExportException(message: String) : Exception(message)
 
-    private enum class InspField {
-        ETI_MISE, ETI_NOM, JOINT_MATIERE, JOINT_DIM, JOINT_ASPECT,
-        BOULON_NEUVES, BOULON_RONDELLES, BOULON_EQUILIBRAGE, BOULON_GRAISSAGE, BOULON_LGDIAM, BOULON_MATIERE,
-        ASSEMBLAGE_PARA, ASSEMBLAGE_EXC
+    /** [shortKey] = libellé normalisé de la colonne dans la ligne d'en-têtes ("Mise", "Nom", ...). */
+    private enum class InspField(val shortKey: String) {
+        ETI_MISE("mise"), ETI_NOM("nom"), JOINT_MATIERE("matj"), JOINT_DIM("dim"), JOINT_ASPECT("visu"),
+        BOULON_NEUVES("neuve"), BOULON_RONDELLES("rond"), BOULON_EQUILIBRAGE("equi"), BOULON_GRAISSAGE("grais"),
+        BOULON_LGDIAM("lgdiam"), BOULON_MATIERE("matb"), ASSEMBLAGE_PARA("para"), ASSEMBLAGE_EXC("exc")
     }
-
-    // Colonnes fixes K..W, dans l'ordre d'origine de l'onglet "1-Trame".
-    private val checkColumns = listOf(
-        "K" to InspField.ETI_MISE, "L" to InspField.ETI_NOM, "M" to InspField.JOINT_MATIERE,
-        "N" to InspField.JOINT_DIM, "O" to InspField.JOINT_ASPECT, "P" to InspField.BOULON_NEUVES,
-        "Q" to InspField.BOULON_RONDELLES, "R" to InspField.BOULON_EQUILIBRAGE, "S" to InspField.BOULON_GRAISSAGE,
-        "T" to InspField.BOULON_LGDIAM, "U" to InspField.BOULON_MATIERE, "V" to InspField.ASSEMBLAGE_PARA,
-        "W" to InspField.ASSEMBLAGE_EXC
-    )
 
     private fun valueFor(field: InspField, insp: InspectionResult): String? {
         val raw = when (field) {
@@ -141,7 +138,8 @@ class ExcelNativeExporter(private val context: Context) {
 
             val insp = inspections["$unite|$famille|$item|$rep"] ?: continue
 
-            for ((colLetter, field) in checkColumns) {
+            for (field in InspField.values()) {
+                val colLetter = cols[field.shortKey] ?: continue // libellé absent de cet onglet : on l'ignore
                 val value = valueFor(field, insp) ?: continue
                 setInlineStringCell(doc, row, cellsByCol, colLetter, value)
             }

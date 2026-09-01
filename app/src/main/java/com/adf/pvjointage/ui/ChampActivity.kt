@@ -115,10 +115,23 @@ class ChampActivity : AppCompatActivity() {
             repo.getBrides(unite, famille, item).collect { list ->
                 val b = list.firstOrNull { it.rep == rep } ?: return@collect
                 bride = b
-                binding.tvJointRef.text = "DN ${b.dn} — PN ${b.pn} — Matière joint : ${b.matiereJoint} — Rondelle : ${b.rondelle}"
-                binding.tvBoulonRef.text = "Matière boulonnerie : ${b.matiereBoulon}"
+
+                binding.selJointDimension.setLabel("${getString(R.string.joint_dimension_centrage)} : DN ${b.dn} - PN ${b.pn}")
+                binding.selJointMatiere.setLabel("${getString(R.string.joint_matiere_conforme)} : ${b.matiereJoint}")
+                binding.selBoulonRondelles.setLabel("${getString(R.string.boulon_rondelles)} : ${b.rondelle}")
+                binding.selBoulonLongueur.setLabel(longueurDiametreLabel(b))
+                binding.selBoulonMatiere.setLabel("${getString(R.string.boulon_matiere)} : ${b.matiereBoulon}")
             }
         }
+    }
+
+    /** "Longueur / Diamètre : M{diamètre} x {longueur}" — colonnes de référence optionnelles ("LgB"/"DiamB"). */
+    private fun longueurDiametreLabel(b: BrideCatalog): String {
+        val label = getString(R.string.boulon_longueur_diametre)
+        if (b.diametreBoulon.isBlank() && b.longueurBoulon.isBlank()) return label
+        val diam = if (b.diametreBoulon.isNotBlank()) "M${b.diametreBoulon}" else "M?"
+        val longueur = b.longueurBoulon.ifBlank { "?" }
+        return "$label : $diam x $longueur"
     }
 
     private fun loadInspection() {

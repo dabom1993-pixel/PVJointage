@@ -88,9 +88,8 @@
                         <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="@string/section_joint" android:textStyle="bold" android:textColor="@color/primary" android:textSize="17sp"/>
                         <TextView android:id="@+id/tvStatutJoint" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textStyle="bold" android:padding="4dp" android:textSize="16sp"/>
                     </LinearLayout>
-                    <TextView android:id="@+id/tvJointRef" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="14sp" android:textColor="@color/black" android:layout_marginBottom="4dp"/>
-                    <com.adf.pvjointage.ui.EtatSelectorView android:id="@+id/selJointMatiere" android:layout_width="match_parent" android:layout_height="wrap_content"/>
                     <com.adf.pvjointage.ui.EtatSelectorView android:id="@+id/selJointDimension" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+                    <com.adf.pvjointage.ui.EtatSelectorView android:id="@+id/selJointMatiere" android:layout_width="match_parent" android:layout_height="wrap_content"/>
                     <com.adf.pvjointage.ui.EtatSelectorView android:id="@+id/selJointAspect" android:layout_width="match_parent" android:layout_height="wrap_content"/>
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
@@ -102,7 +101,6 @@
                         <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="@string/section_boulonnerie" android:textStyle="bold" android:textColor="@color/primary" android:textSize="17sp"/>
                         <TextView android:id="@+id/tvStatutBoulonnerie" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textStyle="bold" android:padding="4dp" android:textSize="16sp"/>
                     </LinearLayout>
-                    <TextView android:id="@+id/tvBoulonRef" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="14sp" android:textColor="@color/black" android:layout_marginBottom="4dp"/>
                     <com.adf.pvjointage.ui.EtatSelectorView android:id="@+id/selBoulonNeuves" android:layout_width="match_parent" android:layout_height="wrap_content"/>
                     <com.adf.pvjointage.ui.EtatSelectorView android:id="@+id/selBoulonRondelles" android:layout_width="match_parent" android:layout_height="wrap_content"/>
                     <com.adf.pvjointage.ui.EtatSelectorView android:id="@+id/selBoulonEquilibrage" android:layout_width="match_parent" android:layout_height="wrap_content"/>
@@ -119,8 +117,26 @@
                         <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="@string/section_assemblage" android:textStyle="bold" android:textColor="@color/primary" android:textSize="17sp"/>
                         <TextView android:id="@+id/tvStatutAssemblage" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textStyle="bold" android:padding="4dp" android:textSize="16sp"/>
                     </LinearLayout>
-                    <com.adf.pvjointage.ui.EtatSelectorView android:id="@+id/selAssemblageParallelisme" android:layout_width="match_parent" android:layout_height="wrap_content"/>
-                    <com.adf.pvjointage.ui.EtatSelectorView android:id="@+id/selAssemblageExcentration" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical">
+                        <ImageView
+                            android:layout_width="96dp"
+                            android:layout_height="60dp"
+                            android:layout_marginEnd="8dp"
+                            android:scaleType="fitCenter"
+                            android:src="@drawable/ic_parallelisme"
+                            android:contentDescription="@string/assemblage_parallelisme" />
+                        <com.adf.pvjointage.ui.EtatSelectorView android:id="@+id/selAssemblageParallelisme" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"/>
+                    </LinearLayout>
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical">
+                        <ImageView
+                            android:layout_width="96dp"
+                            android:layout_height="60dp"
+                            android:layout_marginEnd="8dp"
+                            android:scaleType="fitCenter"
+                            android:src="@drawable/ic_excentration"
+                            android:contentDescription="@string/assemblage_excentration" />
+                        <com.adf.pvjointage.ui.EtatSelectorView android:id="@+id/selAssemblageExcentration" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"/>
+                    </LinearLayout>
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
