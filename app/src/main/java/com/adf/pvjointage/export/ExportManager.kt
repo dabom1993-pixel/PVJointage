@@ -45,9 +45,15 @@ class ExportManager(private val context: Context, private val repo: Repository) 
     private val colorBackground = Color.parseColor("#F4F6F8")
     private val colorValueBox = Color.parseColor("#D3DCE8")
 
+    // Décodé une seule fois, à une résolution proche de sa taille réelle sur la page
+    // (~30pt de haut) : inutile de garder le PNG source en pleine résolution en mémoire.
     private val logoBitmap: Bitmap? by lazy {
         try {
-            BitmapFactory.decodeResource(context.resources, R.drawable.logo_adf)
+            val opts = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+            BitmapFactory.decodeResource(context.resources, R.drawable.logo_adf, opts)
+            opts.inSampleSize = calculateInSampleSize(opts.outWidth, opts.outHeight, 240, 160)
+            opts.inJustDecodeBounds = false
+            BitmapFactory.decodeResource(context.resources, R.drawable.logo_adf, opts)
         } catch (e: Exception) {
             null
         }
@@ -149,7 +155,7 @@ class ExportManager(private val context: Context, private val repo: Repository) 
         val schemaBoxRect = RectF(rightX, schemaBoxTop, rightX + rightWidth, schemaBoxBottom)
         canvas.drawRect(schemaBoxRect, Paint().apply { color = Color.WHITE; style = Paint.Style.FILL })
         canvas.drawRect(schemaBoxRect, Paint().apply { color = colorEnAttente; style = Paint.Style.STROKE; strokeWidth = 1f })
-        val schemaBitmap = schema?.let { loadBitmapFromPath(it.filePath) }
+        val schemaBitmap = schema?.let { loadBitmapFromPath(it.filePath, schemaBoxRect.width().toInt(), schemaBoxRect.height().toInt()) }
         if (schemaBitmap != null) {
             val dst = fitInside(schemaBitmap.width, schemaBitmap.height, schemaBoxRect.width() - 16f, schemaBoxRect.height() - 16f)
             val left = schemaBoxRect.centerX() - dst.first / 2
@@ -477,7 +483,7 @@ class ExportManager(private val context: Context, private val repo: Repository) 
 
             val photo = photos.getOrNull(i)
             if (photo != null) {
-                val bmp = loadBitmapFromPath(photo.filePath)
+                val bmp = loadBitmapFromPath(photo.filePath, cellRect.width().toInt(), cellRect.height().toInt())
                 if (bmp != null) {
                     val dst = fitInside(bmp.width, bmp.height, cellRect.width() - 8f, cellRect.height() - 8f)
                     val left = cellRect.centerX() - dst.first / 2
@@ -488,16 +494,42 @@ class ExportManager(private val context: Context, private val repo: Repository) 
         }
     }
 
-    private fun loadBitmapFromPath(path: String): Bitmap? {
+    /**
+     * Charge l'image sous-échantillonnée à une résolution proche de sa taille d'affichage
+     * ([reqWidth] x [reqHeight], en points PDF ≈ pixels ici) : une photo prise par l'appareil
+     * fait plusieurs Mo en pleine résolution, inutile de l'embarquer telle quelle dans le PDF
+     * alors qu'elle occupe au final une vignette de quelques centimètres.
+     */
+    private fun loadBitmapFromPath(path: String, reqWidth: Int, reqHeight: Int): Bitmap? {
         return try {
-            if (path.startsWith("content://") || path.startsWith("file://")) {
-                context.contentResolver.openInputStream(Uri.parse(path))?.use { BitmapFactory.decodeStream(it) }
-            } else {
-                BitmapFactory.decodeFile(path)
-            }
+            val opts = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+            decodeInto(path, opts)
+            opts.inSampleSize = calculateInSampleSize(opts.outWidth, opts.outHeight, reqWidth, reqHeight)
+            opts.inJustDecodeBounds = false
+            decodeInto(path, opts)
         } catch (e: Exception) {
             null
         }
+    }
+
+    private fun decodeInto(path: String, opts: BitmapFactory.Options): Bitmap? {
+        return if (path.startsWith("content://") || path.startsWith("file://")) {
+            context.contentResolver.openInputStream(Uri.parse(path))?.use { BitmapFactory.decodeStream(it, null, opts) }
+        } else {
+            BitmapFactory.decodeFile(path, opts)
+        }
+    }
+
+    /** Plus grande puissance de 2 permettant de décoder au moins [reqWidth] x [reqHeight]. */
+    private fun calculateInSampleSize(sourceWidth: Int, sourceHeight: Int, reqWidth: Int, reqHeight: Int): Int {
+        var inSampleSize = 1
+        if (sourceWidth <= 0 || sourceHeight <= 0 || reqWidth <= 0 || reqHeight <= 0) return inSampleSize
+        val halfWidth = sourceWidth / 2
+        val halfHeight = sourceHeight / 2
+        while (halfWidth / inSampleSize >= reqWidth && halfHeight / inSampleSize >= reqHeight) {
+            inSampleSize *= 2
+        }
+        return inSampleSize
     }
 
     /** Retourne (largeur, hauteur) mises à l'échelle pour tenir dans [maxW] x [maxH] en gardant les proportions. */

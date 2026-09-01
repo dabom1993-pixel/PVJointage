@@ -355,7 +355,7 @@ class MainActivity : AppCompatActivity() {
                     .forEach { entry ->
                         cell.addView(TextView(this@MainActivity).apply {
                             text = entry.item
-                            setTextColor(if (entry.complete) Color.BLACK else Color.RED)
+                            setTextColor(if (entry.complete) ContextCompat.getColor(this@MainActivity, R.color.conforme) else Color.RED)
                             textSize = 13f
                             setPadding(6, 4, 6, 4)
                             setOnClickListener { onItemClick(entry.unite, entry.famille, entry.item) }

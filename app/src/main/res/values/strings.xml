@@ -96,6 +96,6 @@
     <string name="catalogue_tous">Tous</string>
     <string name="catalogue_complets">Complets (100%)</string>
     <string name="catalogue_incomplets">Incomplets</string>
-    <string name="catalogue_legende">Rouge = item non rempli à 100 %  ·  Noir = item complet</string>
+    <string name="catalogue_legende">Rouge = item non rempli à 100 %  ·  Vert = item complet</string>
     <string name="catalogue_vide">Aucun item pour ce filtre</string>
 </resources>
