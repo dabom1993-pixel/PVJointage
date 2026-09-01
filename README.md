@@ -21,6 +21,36 @@ Résumé :
 
 ---
 
+## 📱 Mettre à jour la tablette par QR code (un seul scan, toujours la dernière version)
+
+Le workflow `.github/workflows/build-apk.yml` publie désormais l'APK compilé
+sur une **release GitHub à tag fixe `tablette-latest`**, qui est remplacée à
+chaque nouveau run. L'URL de téléchargement ne change donc jamais :
+
+```
+https://github.com/dabom1993-pixel/PVJointage/releases/download/tablette-latest/PVJointage.apk
+```
+
+Le QR code [`docs/qr-tablette.png`](docs/qr-tablette.png) encode exactement
+cette URL :
+
+![QR code de mise à jour tablette](docs/qr-tablette.png)
+
+**Usage :**
+1. Onglet **Actions** du dépôt GitHub → workflow **Build APK** → **Run workflow**.
+2. Attendre la fin du build (~5-10 min).
+3. Sur la tablette, scanner **une seule fois pour toutes les mises à jour**
+   le QR code ci-dessus (imprimé ou collé sur la tablette) : le navigateur
+   télécharge directement `PVJointage.apk`, qui contient toujours la dernière
+   version compilée. Ouvrir le fichier téléchargé pour l'installer
+   (autoriser "Sources inconnues" au premier scan).
+
+Comme la clé de signature debug est stable (voir plus bas), chaque nouvelle
+installation remplace proprement la précédente sans perte de données, sans
+avoir à désinstaller l'app ni à régénérer le QR code.
+
+---
+
 ## Ce qui a été repris de l'Excel
 
 | Onglet Excel | Équivalent dans l'app |

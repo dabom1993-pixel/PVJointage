@@ -57,8 +57,30 @@ jobs:
       - name: Compiler l'APK (debug)
         run: ./gradlew assembleDebug --no-daemon --stacktrace
 
-      - name: Publier l'APK généré
+      - name: Publier l'APK généré (artifact du run)
         uses: actions/upload-artifact@v4
         with:
           name: PVJointage-debug-apk
           path: app/build/outputs/apk/debug/*.apk
+
+      # Nom de fichier fixe pour que l'URL de téléchargement ne change jamais
+      # (c'est cette URL qui est encodée dans le QR code de la tablette).
+      - name: Préparer l'APK sous un nom stable
+        run: cp app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/PVJointage.apk
+
+      # Republie (crée ou remplace) une release GitHub à tag fixe "tablette-latest".
+      # L'asset est donc toujours accessible à la même URL, quel que soit le run :
+      # https://github.com/<owner>/<repo>/releases/download/tablette-latest/PVJointage.apk
+      # -> c'est cette URL stable que le QR code de la tablette doit viser.
+      - name: Publier/mettre à jour la release "tablette-latest"
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: tablette-latest
+          name: "Dernière version (tablette)"
+          body: >
+            APK reconstruit automatiquement à chaque lancement manuel du workflow
+            "Build APK". Toujours disponible à la même URL : c'est celle-ci qu'il
+            faut scanner avec le QR code collé sur la tablette.
+          files: app/build/outputs/apk/debug/PVJointage.apk
