@@ -39,9 +39,10 @@ class EtatSelectorView @JvmOverloads constructor(
         btnNon = findViewById(R.id.btnNon)
         btnAutre = findViewById(R.id.btnAutre)
 
-        btnOui.setOnClickListener { setEtat(Etat.OUI) }
-        btnNon.setOnClickListener { setEtat(Etat.NON) }
-        btnAutre.setOnClickListener { setEtat(Etat.AUTRE) }
+        // Toucher à nouveau le bouton déjà sélectionné le décoche (retour à VIDE / en attente).
+        btnOui.setOnClickListener { setEtat(if (etat == Etat.OUI) Etat.VIDE else Etat.OUI) }
+        btnNon.setOnClickListener { setEtat(if (etat == Etat.NON) Etat.VIDE else Etat.NON) }
+        btnAutre.setOnClickListener { setEtat(if (etat == Etat.AUTRE) Etat.VIDE else Etat.AUTRE) }
         refreshColors()
     }
 

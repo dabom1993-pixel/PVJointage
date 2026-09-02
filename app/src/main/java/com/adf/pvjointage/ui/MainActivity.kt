@@ -560,8 +560,10 @@ class MainActivity : AppCompatActivity() {
                         val selectionne = key in pdfExportSelection
                         cell.addView(TextView(this@MainActivity).apply {
                             text = entry.item
-                            setTextColor(if (selectionne) ContextCompat.getColor(this@MainActivity, R.color.conforme) else Color.BLACK)
+                            // Couleur du texte = complétude (comme la fenêtre Filtre) ; fond jaune = marqué pour l'impression.
+                            setTextColor(if (entry.complete) ContextCompat.getColor(this@MainActivity, R.color.conforme) else Color.RED)
                             setTypeface(typeface, if (selectionne) android.graphics.Typeface.BOLD else android.graphics.Typeface.NORMAL)
+                            setBackgroundColor(if (selectionne) Color.parseColor("#FFF9C4") else Color.TRANSPARENT)
                             textSize = 13f
                             setPadding(6, 4, 6, 4)
                             setOnClickListener {

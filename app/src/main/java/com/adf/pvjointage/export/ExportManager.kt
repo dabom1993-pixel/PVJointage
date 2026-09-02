@@ -415,27 +415,36 @@ class ExportManager(private val context: Context, private val repo: Repository) 
         return "$label : $diam x $longueur"
     }
 
-    /** Ligne de contrôle suivie d'un petit schéma à droite (ASSEMBLAGE : parallélisme / excentration). */
+    /** Ligne de contrôle avec un petit schéma juste après le libellé (ASSEMBLAGE : parallélisme / excentration). */
     private fun drawEtatRowWithImage(canvas: Canvas, x: Float, y: Float, width: Float, iconRes: Int, label: String, code: String?): Float {
-        val imgW = 26f
-        val imgH = 16f
-        val gap = 6f
-        // Le texte + la pastille O/N/A gardent leur mise en page habituelle, juste rétrécie pour laisser la place au schéma.
-        val bottom = drawEtatRow(canvas, x, y, width - imgW - gap, label, code)
-        val imgTop = y + (bottom - y - imgH) / 2f
-        androidx.core.content.ContextCompat.getDrawable(context, iconRes)?.let { drawable ->
-            drawable.setBounds((x + width - imgW).toInt(), imgTop.toInt(), (x + width).toInt(), (imgTop + imgH).toInt())
-            drawable.draw(canvas)
-        }
-        return bottom
-    }
-
-    /** Une ligne de contrôle "libellé ................ [OUI/NON/A]" avec pastille colorée. */
-    private fun drawEtatRow(canvas: Canvas, x: Float, y: Float, width: Float, label: String, code: String?): Float {
         val rowHeight = 17f
         val labelPaint = Paint().apply { color = Color.BLACK; textSize = 9f }
         canvas.drawText(label, x, y + rowHeight - 5f, labelPaint)
 
+        val imgW = 26f
+        val imgH = 16f
+        val iconX = x + labelPaint.measureText(label) + 8f
+        val imgTop = y + (rowHeight - imgH) / 2f
+        androidx.core.content.ContextCompat.getDrawable(context, iconRes)?.let { drawable ->
+            drawable.setBounds(iconX.toInt(), imgTop.toInt(), (iconX + imgW).toInt(), (imgTop + imgH).toInt())
+            drawable.draw(canvas)
+        }
+
+        drawEtatPill(canvas, x, y, width, rowHeight, code)
+        return y + rowHeight
+    }
+
+    /** Une ligne de contrôle "libellé ................ [C/NC/A]" avec pastille colorée. */
+    private fun drawEtatRow(canvas: Canvas, x: Float, y: Float, width: Float, label: String, code: String?): Float {
+        val rowHeight = 17f
+        val labelPaint = Paint().apply { color = Color.BLACK; textSize = 9f }
+        canvas.drawText(label, x, y + rowHeight - 5f, labelPaint)
+        drawEtatPill(canvas, x, y, width, rowHeight, code)
+        return y + rowHeight
+    }
+
+    /** Pastille colorée C/NC/A, calée sur le bord droit de la ligne (largeur totale [width] depuis [x]). */
+    private fun drawEtatPill(canvas: Canvas, x: Float, y: Float, width: Float, rowHeight: Float, code: String?) {
         val pillWidth = 50f
         val pillRect = RectF(x + width - pillWidth, y + 2f, x + width, y + rowHeight - 2f)
         val (bg, text) = when (code) {
@@ -448,8 +457,6 @@ class ExportManager(private val context: Context, private val repo: Repository) 
         val textPaint = Paint().apply { color = Color.WHITE; textSize = 8.5f; isFakeBoldText = true; textAlign = Paint.Align.CENTER }
         val fm = textPaint.fontMetrics
         canvas.drawText(text, pillRect.centerX(), pillRect.centerY() - (fm.ascent + fm.descent) / 2, textPaint)
-
-        return y + rowHeight
     }
 
     /**
