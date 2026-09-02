@@ -16,6 +16,9 @@
     <string name="type_equipement">Type d\'équipement :</string>
     <string name="item_label">ITEM :</string>
 
+    <!-- Gestion des révisions : affiché quand l'item a été modifié après un export PDF -->
+    <string name="rev_badge">REV %1$d</string>
+
     <!-- Columns 1-Exemple table -->
     <string name="col_rep">Rep.</string>
     <string name="col_designation">Désignation</string>
@@ -98,6 +101,11 @@
     <string name="catalogue_incomplets">Incomplets</string>
     <string name="catalogue_legende">Rouge = item non rempli à 100 %  ·  Vert = item complet</string>
     <string name="catalogue_vide">Aucun item pour ce filtre</string>
+
+    <string name="pdf_exports_titre">EXPORTS PDF SUR LA TABLETTE</string>
+    <string name="pdf_exports_legende">Touchez un item pour ouvrir son dernier PDF exporté.</string>
+    <string name="pdf_exports_vide">Aucun export PDF sur la tablette</string>
+    <string name="pdf_viewer_erreur">Impossible d\'afficher ce PDF</string>
 
     <string name="export_option_excel">Excel - Mettre à jour le fichier importé</string>
     <string name="export_option_pdf">PDF - Impression des items</string>

@@ -19,6 +19,8 @@ import com.adf.pvjointage.data.ItemSchema
 import com.adf.pvjointage.data.Photo
 import com.adf.pvjointage.data.PvHeader
 import com.adf.pvjointage.data.Repository
+import com.adf.pvjointage.data.itemDisplayLabel
+import com.adf.pvjointage.data.toInspectionResult
 import com.adf.pvjointage.model.ConformiteCalculator
 import com.adf.pvjointage.model.Conformite
 import com.adf.pvjointage.model.Etat
@@ -32,6 +34,10 @@ import java.io.FileOutputStream
  * - PDF : un fichier par ITEM — 1ère page = affiche de l'écran principal (A4 paysage),
  *   pages suivantes = détail de chaque bride façon "B-Champ" (A4 portrait, photos en bas,
  *   4 photos maximum au total pour l'item).
+ * - Traçabilité des révisions (voir [Repository.markItemExported]) : chaque export écrit un
+ *   nouveau fichier (l'export précédent n'est jamais modifié ni supprimé) et ne contient
+ *   jamais une bride en double — une bride modifiée depuis le dernier export y apparaît une
+ *   seule fois, marquée "RÉVISION n" ; une bride inchangée y apparaît telle quelle, sans mention.
  * Les fichiers sont écrits dans le dossier de l'application (files/exports) et
  * restent également disponibles hors-ligne (stockage local).
  */
@@ -72,33 +78,91 @@ class ExportManager(private val context: Context, private val repo: Repository) 
     suspend fun exportPdf(unite: String, famille: String, item: String): String {
         val header = repo.getHeader().first()
         val brides = repo.getBrides(unite, famille, item).first()
-        val inspections = repo.getInspectionsForItem(unite, famille, item).first().associateBy { it.rep }
+        val currentInspections = repo.getInspectionsForItem(unite, famille, item).first().associateBy { it.rep }
         // Ordre chronologique (la requête de base est triée du plus récent au plus ancien
         // pour l'affichage à l'écran ; le PDF doit lui suivre l'ordre de prise de vue).
         val photos = repo.getPhotosForItem(unite, famille, item).first().sortedBy { it.dateAjout }
         val schema = repo.getSchemaForItem(unite, famille, item).first()
 
+        // Traçabilité des révisions : si l'item a déjà été modifié depuis son dernier export,
+        // ce nouvel export documente cette révision ("ITEM-R1", etc.) — voir Repository.touchItemRevision.
+        val itemRevisionState = repo.getItemRevisionOnce(unite, famille, item)
+        val revision = itemRevisionState?.revision ?: 0
+        val itemLabel = itemDisplayLabel(item, revision)
+
+        // État "de base" = instantané des contrôles au dernier export (vide si l'item n'a jamais
+        // été exporté). Sert uniquement à détecter quelles brides ont changé depuis — pas à les
+        // afficher : ce PDF ne contient jamais deux fois la même bride (voir erratum ci-dessous).
+        val alreadyExported = itemRevisionState != null && itemRevisionState.exportedRevision >= 0
+        val baseInspections = if (alreadyExported) {
+            repo.getInspectionBaselineForItem(unite, famille, item).associateBy { it.rep }.mapValues { it.value.toInspectionResult() }
+        } else emptyMap()
+
+        // Brides dont les contrôles/remarque ont changé depuis ce dernier export : seules elles
+        // portent la mention "RÉVISION n" sur leur page détail — voir controlsDiffer().
+        val revisedReps = if (alreadyExported) {
+            brides.map { it.rep }.filterTo(mutableSetOf()) { rep -> controlsDiffer(baseInspections[rep], currentInspections[rep]) }
+        } else emptySet()
+
         val doc = PdfDocument()
         var pageNumber = 0
 
-        pageNumber = drawOverviewPages(doc, pageNumber, header, unite, famille, item, brides, inspections, schema)
+        // Un seul récap (état actuel), marqué "RÉVISION n" si l'item est en révision.
+        pageNumber = drawOverviewPages(
+            doc, pageNumber, header, unite, famille, item, brides, currentInspections, schema,
+            revisionLabel = if (revision > 0) revision else null
+        )
 
+        // Une seule page détail par bride (état actuel — jamais de doublon) : bride non modifiée
+        // depuis le dernier export = page "de base" (sans mention) ; bride modifiée = sa version
+        // actuelle, marquée "RÉVISION n".
         var photosBudget = 4
         for (bride in brides) {
-            pageNumber++
             val bridePhotos = photos.filter { it.rep == bride.rep }.take(photosBudget)
             photosBudget -= bridePhotos.size
-            drawBrideDetailPage(doc, pageNumber, header, unite, famille, item, bride, inspections[bride.rep], bridePhotos)
+
+            pageNumber++
+            val revisionLabel = if (bride.rep in revisedReps) revision else null
+            drawBrideDetailPage(doc, pageNumber, header, unite, famille, item, bride, currentInspections[bride.rep], bridePhotos, revisionLabel)
         }
 
-        val fileName = "PV_${item}_${System.currentTimeMillis()}.pdf"
+        val fileName = "PV_${itemLabel}_${System.currentTimeMillis()}.pdf"
         val file = File(exportDir(), fileName)
         FileOutputStream(file).use { doc.writeTo(it) }
         doc.close()
+
+        // Fige cette révision comme nouvelle référence (et instantané des contrôles) : une
+        // modification ultérieure fera apparaître la révision suivante ("-R2", ...).
+        repo.markItemExported(unite, famille, item)
+
         return file.absolutePath
     }
 
-    /** Page 1 (+ suite si nécessaire) : affiche de l'écran principal — A4 paysage. */
+    /** Contrôles ou remarque différents entre l'état "de base" (dernier export) et l'état actuel — les photos ne comptent pas (non historisées). */
+    private fun controlsDiffer(base: InspectionResult?, current: InspectionResult?): Boolean {
+        if (base == null && current == null) return false
+        if (base == null || current == null) return true
+        return base.etiMiseSerree != current.etiMiseSerree ||
+            base.etiNomDateLisible != current.etiNomDateLisible ||
+            base.jointMatiereConforme != current.jointMatiereConforme ||
+            base.jointDimensionCentrage != current.jointDimensionCentrage ||
+            base.jointAspectNeuf != current.jointAspectNeuf ||
+            base.boulonNeuves != current.boulonNeuves ||
+            base.boulonRondelles != current.boulonRondelles ||
+            base.boulonEquilibrage != current.boulonEquilibrage ||
+            base.boulonGraissage != current.boulonGraissage ||
+            base.boulonLongueurDiametre != current.boulonLongueurDiametre ||
+            base.boulonMatiere != current.boulonMatiere ||
+            base.assemblageParallelisme != current.assemblageParallelisme ||
+            base.assemblageExcentration != current.assemblageExcentration ||
+            base.remarque != current.remarque
+    }
+
+    /**
+     * Page 1 (+ suite si nécessaire) : affiche de l'écran principal — A4 paysage.
+     * [revisionLabel] : null si l'item n'est pas en révision (bandeau/ITEM sans mention), ou le
+     * numéro de révision courant de l'item (bandeau "— RÉVISION n", ITEM "-Rn").
+     */
     private fun drawOverviewPages(
         doc: PdfDocument,
         startPageNumber: Int,
@@ -108,7 +172,8 @@ class ExportManager(private val context: Context, private val repo: Repository) 
         item: String,
         brides: List<BrideCatalog>,
         inspections: Map<String, InspectionResult>,
-        schema: ItemSchema?
+        schema: ItemSchema?,
+        revisionLabel: Int?
     ): Int {
         val pageWidth = 842
         val pageHeight = 595
@@ -119,6 +184,9 @@ class ExportManager(private val context: Context, private val repo: Repository) 
         val rightX = 490f
         val rightWidth = pageWidth - 20f - rightX
 
+        val displayItem = itemDisplayLabel(item, revisionLabel ?: 0)
+        val bannerTitle = if (revisionLabel != null) "PV de JOINTAGE — RÉVISION $revisionLabel" else "PV de JOINTAGE"
+
         var page = doc.startPage(PdfDocument.PageInfo.Builder(pageWidth, pageHeight, ++pageNumber).create())
         var canvas = page.canvas
         canvas.drawColor(colorBackground)
@@ -127,7 +195,7 @@ class ExportManager(private val context: Context, private val repo: Repository) 
             header?.client?.trim()?.takeIf { it.isNotEmpty() },
             header?.lieu?.trim()?.takeIf { it.isNotEmpty() }
         ).joinToString(" - ")
-        var y = drawBanner(canvas, pageWidth, "PV de JOINTAGE", dateText = header?.date.orEmpty(), centerText = clientLieu.ifEmpty { null })
+        var y = drawBanner(canvas, pageWidth, bannerTitle, dateText = header?.date.orEmpty(), centerText = clientLieu.ifEmpty { null })
         y += 10f
 
         // Libellés en petit, valeurs en légèrement plus grand (et gras) juste après.
@@ -143,7 +211,7 @@ class ExportManager(private val context: Context, private val repo: Repository) 
         drawSeg("      Type d'équipement : ", labelPaint)
         drawSeg(famille, valuePaint)
         drawSeg("      ITEM : ", labelPaint)
-        drawSeg(item, valuePaint)
+        drawSeg(displayItem, valuePaint)
         y += 14f
 
         // Schéma sur la moitié droite : toujours affiché à droite, sur toutes les pages
@@ -178,7 +246,7 @@ class ExportManager(private val context: Context, private val repo: Repository) 
                 page = doc.startPage(PdfDocument.PageInfo.Builder(pageWidth, pageHeight, ++pageNumber).create())
                 canvas = page.canvas
                 canvas.drawColor(colorBackground)
-                val bannerBottom = drawBanner(canvas, pageWidth, "PV de JOINTAGE — suite")
+                val bannerBottom = drawBanner(canvas, pageWidth, "$bannerTitle — suite")
                 drawSchemaPanel(canvas, rightX, rightWidth, bannerBottom + 16f, pageHeight - 20f, schema)
                 tableY = drawTableHeader(canvas, bannerBottom + 16f)
             }
@@ -239,7 +307,12 @@ class ExportManager(private val context: Context, private val repo: Repository) 
         return result
     }
 
-    /** Détail d'une bride façon "B-Champ" — A4 portrait, avec photos en bas. */
+    /**
+     * Détail d'une bride façon "B-Champ" — A4 portrait, avec photos en bas.
+     * [revisionLabel] : null pour une bride non modifiée depuis le dernier export (page "de
+     * base", bandeau/ITEM/repère sans mention), ou le numéro de révision pour une bride modifiée
+     * (bandeau "— RÉVISION n", ITEM et repère "-Rn") — jamais les deux pages pour une même bride.
+     */
     private fun drawBrideDetailPage(
         doc: PdfDocument,
         pageNumber: Int,
@@ -249,7 +322,8 @@ class ExportManager(private val context: Context, private val repo: Repository) 
         item: String,
         bride: BrideCatalog,
         insp: InspectionResult?,
-        photos: List<Photo>
+        photos: List<Photo>,
+        revisionLabel: Int?
     ) {
         val pageWidth = 595
         val pageHeight = 842
@@ -260,15 +334,22 @@ class ExportManager(private val context: Context, private val repo: Repository) 
         val marginX = 24f
         val contentWidth = pageWidth - marginX * 2
 
-        var y = drawBanner(canvas, pageWidth, "PV de JOINTAGE — DÉTAIL DE LA BRIDE", dateText = header?.date.orEmpty())
+        val bannerTitle = if (revisionLabel != null) {
+            "PV de JOINTAGE — DÉTAIL DE LA BRIDE — RÉVISION $revisionLabel"
+        } else {
+            "PV de JOINTAGE — DÉTAIL DE LA BRIDE"
+        }
+        var y = drawBanner(canvas, pageWidth, bannerTitle, dateText = header?.date.orEmpty())
         y += 10f
 
-        val repereBride = if (bride.designation.isNotBlank()) "${bride.rep} - ${bride.designation}" else bride.rep
+        val displayItem = itemDisplayLabel(item, revisionLabel ?: 0)
+        val repLabel = itemDisplayLabel(bride.rep, revisionLabel ?: 0)
+        val repereBride = if (bride.designation.isNotBlank()) "$repLabel - ${bride.designation}" else repLabel
 
         // LOCALISATION
         y = drawSectionBar(canvas, marginX, y, contentWidth, "LOCALISATION")
         y = drawInfoRow(canvas, marginX, y, contentWidth, "Client" to header?.client.orEmpty(), "Type d'équipement" to famille)
-        y = drawInfoRow(canvas, marginX, y, contentWidth, "Lieu" to header?.lieu.orEmpty(), "ITEM" to item)
+        y = drawInfoRow(canvas, marginX, y, contentWidth, "Lieu" to header?.lieu.orEmpty(), "ITEM" to displayItem)
         y = drawInfoRow(canvas, marginX, y, contentWidth, "Unité" to unite, "Repère de la bride" to repereBride)
         y += 8f
 

@@ -2,10 +2,13 @@ package com.adf.pvjointage.ui
 
 import android.app.Dialog
 import android.content.Intent
+import android.graphics.Bitmap
 import android.graphics.Color
+import android.graphics.pdf.PdfRenderer
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.ParcelFileDescriptor
 import android.provider.Settings
 import android.view.GestureDetector
 import android.view.Menu
@@ -14,6 +17,7 @@ import android.view.MotionEvent
 import android.view.View
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TableLayout
 import android.widget.TableRow
@@ -35,12 +39,15 @@ import com.adf.pvjointage.data.Repository
 import com.adf.pvjointage.databinding.ActivityMainBinding
 import com.adf.pvjointage.databinding.DialogCatalogueBinding
 import com.adf.pvjointage.databinding.DialogPdfExportBinding
+import com.adf.pvjointage.databinding.DialogPdfViewerBinding
 import com.adf.pvjointage.databinding.DialogSchemaZoomBinding
 import com.adf.pvjointage.databinding.DialogUpdateProgressBinding
 import com.adf.pvjointage.export.ExportManager
 import com.adf.pvjointage.update.UpdateManager
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 
 class MainActivity : AppCompatActivity() {
@@ -63,6 +70,7 @@ class MainActivity : AppCompatActivity() {
     private var suppressSpinnerEvents = false
     private var schemaJob: kotlinx.coroutines.Job? = null
     private var currentSchemaFile: File? = null
+    private var revisionJob: kotlinx.coroutines.Job? = null
 
     private val schemaGestureDetector by lazy {
         GestureDetector(this, object : GestureDetector.SimpleOnGestureListener() {
@@ -124,6 +132,7 @@ class MainActivity : AppCompatActivity() {
         binding.cardLogo.setOnClickListener { onUpdateButtonClicked() }
 
         observeBridesAndInspections()
+        observeItemRevision()
     }
 
     private fun saveHeader() {
@@ -194,10 +203,12 @@ class MainActivity : AppCompatActivity() {
                     persistSelection()
                     observeBridesAndInspections()
                     observeSchema()
+                    observeItemRevision()
                 }
                 if (selectedItem.isNotBlank()) {
                     observeBridesAndInspections()
                     observeSchema()
+                    observeItemRevision()
                 }
             }
         }
@@ -256,6 +267,28 @@ class MainActivity : AppCompatActivity() {
                     val byRep = inspections.associateBy { it.rep }
                     brides.map { BrideRow(it, byRep[it.rep]) }
                 }.collect { rows -> adapter.submit(rows) }
+            }
+        }
+    }
+
+    /** Badge "REV n", affiché près de la Date, tant que l'item sélectionné a été modifié après son dernier export PDF. */
+    private fun observeItemRevision() {
+        revisionJob?.cancel()
+        if (selectedUnite.isBlank() || selectedFamille.isBlank() || selectedItem.isBlank()) {
+            binding.tvItemRevision.visibility = View.GONE
+            return
+        }
+        revisionJob = lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                repo.getItemRevision(selectedUnite, selectedFamille, selectedItem).collect { rev ->
+                    val revision = rev?.revision ?: 0
+                    if (revision > 0) {
+                        binding.tvItemRevision.text = getString(R.string.rev_badge, revision)
+                        binding.tvItemRevision.visibility = View.VISIBLE
+                    } else {
+                        binding.tvItemRevision.visibility = View.GONE
+                    }
+                }
             }
         }
     }
@@ -320,6 +353,13 @@ class MainActivity : AppCompatActivity() {
 
             dialogBinding.filterGroup.setOnCheckedChangeListener { _, _ -> render() }
             render()
+
+            // Moitié droite : même présentation, sans filtre — uniquement les items ayant au
+            // moins un export PDF, ouvert directement dans la visionneuse interne au toucher.
+            val pdfFilesByItem = withContext(Dispatchers.IO) {
+                exportedPdfFiles().groupBy { itemCoreFromPdfFileName(it) }
+            }
+            buildPdfExportsTable(dialogBinding.pdfExportsTable, entries, pdfFilesByItem)
         }
         dialog.show()
     }
@@ -366,7 +406,7 @@ class MainActivity : AppCompatActivity() {
                     .sortedBy { it.item }
                     .forEach { entry ->
                         cell.addView(TextView(this@MainActivity).apply {
-                            text = entry.item
+                            text = entry.displayItem
                             setTextColor(if (entry.complete) ContextCompat.getColor(this@MainActivity, R.color.conforme) else Color.RED)
                             textSize = 13f
                             setPadding(6, 4, 6, 4)
@@ -387,10 +427,164 @@ class MainActivity : AppCompatActivity() {
         setTextColor(Color.WHITE)
     }
 
+    // --- Fenêtre Filtre, moitié droite : exports PDF présents sur la tablette ------------------
+
+    /** Dossier des PDF générés (voir ExportManager.exportDir) : uniquement les ".pdf", jamais les ".xlsm" de l'export Excel. */
+    private fun exportedPdfFiles(): List<File> =
+        File(getExternalFilesDir(null), "exports")
+            .listFiles { f -> f.isFile && f.extension.equals("pdf", ignoreCase = true) }
+            ?.toList().orEmpty()
+
+    private val revisionSuffixRegex = Regex("-R\\d+$")
+
+    /**
+     * Retrouve le code ITEM à partir du nom de fichier "PV_<item ou item-Rn>_<timestamp>.pdf"
+     * (voir ExportManager.exportPdf). Le timestamp est toujours le dernier segment "_" (des
+     * chiffres) : `substringBeforeLast('_')` reste donc correct même si le code ITEM contient
+     * lui-même des "_". Le suffixe "-Rn" éventuel est retiré pour retrouver l'item de base.
+     */
+    private fun itemCoreFromPdfFileName(file: File): String? {
+        val name = file.nameWithoutExtension
+        if (!name.startsWith("PV_")) return null
+        val withoutPrefix = name.removePrefix("PV_")
+        val withoutTimestamp = withoutPrefix.substringBeforeLast('_', "")
+        if (withoutTimestamp.isEmpty()) return null
+        return withoutTimestamp.replace(revisionSuffixRegex, "")
+    }
+
+    /**
+     * Même grille Unité × Famille que [buildCatalogueTable], sans filtre : uniquement les items
+     * ayant au moins un fichier dans [pdfFilesByItem]. Toucher un item ouvre son export PDF le
+     * plus récent dans la visionneuse interne (voir [showPdfViewer]).
+     *
+     * Limite connue : le nom de fichier n'encode que le code ITEM (pas Unité/Famille) — si le
+     * même code ITEM est réutilisé dans plusieurs Unités/Familles du catalogue, ses PDF
+     * apparaîtront (à tort) sous chacune d'elles.
+     */
+    private fun buildPdfExportsTable(
+        table: TableLayout,
+        entries: List<Repository.CatalogueEntry>,
+        pdfFilesByItem: Map<String?, List<File>>
+    ) {
+        table.removeAllViews()
+        val withPdf = entries.filter { !pdfFilesByItem[it.item].isNullOrEmpty() }
+
+        if (withPdf.isEmpty()) {
+            table.addView(TextView(this).apply {
+                text = getString(R.string.pdf_exports_vide)
+                setPadding(24, 24, 24, 24)
+            })
+            return
+        }
+
+        val unites = withPdf.map { it.unite }.distinct().sorted()
+        val familles = withPdf.map { it.famille }.distinct().sorted()
+
+        val headerRow = TableRow(this)
+        headerRow.addView(catalogueHeaderCell(""))
+        familles.forEach { headerRow.addView(catalogueHeaderCell(it)) }
+        table.addView(headerRow)
+
+        unites.forEach { unite ->
+            val row = TableRow(this)
+            row.addView(catalogueHeaderCell(unite))
+            familles.forEach { famille ->
+                val cell = LinearLayout(this).apply {
+                    orientation = LinearLayout.VERTICAL
+                    setPadding(12, 8, 12, 8)
+                }
+                withPdf.filter { it.unite == unite && it.famille == famille }
+                    .sortedBy { it.item }
+                    .forEach { entry ->
+                        cell.addView(TextView(this@MainActivity).apply {
+                            text = entry.displayItem
+                            setTextColor(ContextCompat.getColor(this@MainActivity, R.color.primary_dark))
+                            textSize = 13f
+                            setPadding(6, 4, 6, 4)
+                            setOnClickListener {
+                                val latest = pdfFilesByItem[entry.item]?.maxByOrNull { it.lastModified() }
+                                if (latest != null) showPdfViewer(latest, entry.displayItem)
+                            }
+                        })
+                    }
+                row.addView(cell)
+            }
+            table.addView(row)
+        }
+    }
+
+    /**
+     * Visionneuse PDF interne (plein écran, fermeture par la croix) : évite d'avoir à sortir le
+     * fichier de la tablette pour le consulter. Rendu de chaque page en image via
+     * [android.graphics.pdf.PdfRenderer] (aucune dépendance externe nécessaire).
+     */
+    private fun showPdfViewer(file: File, title: String) {
+        val dialogBinding = DialogPdfViewerBinding.inflate(layoutInflater)
+        val dialog = Dialog(this, android.R.style.Theme_Black_NoTitleBar_Fullscreen)
+        dialog.setContentView(dialogBinding.root)
+        dialogBinding.tvPdfViewerTitle.text = title
+        dialogBinding.btnFermerPdfViewer.setOnClickListener { dialog.dismiss() }
+
+        val pageBitmaps = mutableListOf<Bitmap>()
+        val job = lifecycleScope.launch {
+            val rendered = withContext(Dispatchers.IO) { renderPdfPages(file) }
+            dialogBinding.pdfViewerProgress.visibility = View.GONE
+            if (rendered.isEmpty()) {
+                android.widget.Toast.makeText(this@MainActivity, R.string.pdf_viewer_erreur, android.widget.Toast.LENGTH_LONG).show()
+                dialog.dismiss()
+                return@launch
+            }
+            pageBitmaps.addAll(rendered)
+            rendered.forEach { bmp ->
+                dialogBinding.pdfPagesContainer.addView(ImageView(this@MainActivity).apply {
+                    setImageBitmap(bmp)
+                    adjustViewBounds = true
+                    scaleType = ImageView.ScaleType.FIT_CENTER
+                    layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
+                        bottomMargin = 24
+                    }
+                })
+            }
+        }
+        dialog.setOnDismissListener {
+            job.cancel()
+            pageBitmaps.forEach { it.recycle() }
+            pageBitmaps.clear()
+        }
+        dialog.show()
+    }
+
+    /** Rend chaque page de [file] en Bitmap (largeur = largeur d'écran) — appelé hors thread principal. */
+    private fun renderPdfPages(file: File): List<Bitmap> {
+        val bitmaps = mutableListOf<Bitmap>()
+        try {
+            ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY).use { pfd ->
+                PdfRenderer(pfd).use { renderer ->
+                    val targetWidth = resources.displayMetrics.widthPixels
+                    for (i in 0 until renderer.pageCount) {
+                        renderer.openPage(i).use { page ->
+                            val scale = targetWidth.toFloat() / page.width
+                            val targetHeight = (page.height * scale).toInt().coerceAtLeast(1)
+                            val bmp = Bitmap.createBitmap(targetWidth, targetHeight, Bitmap.Config.ARGB_8888)
+                            bmp.eraseColor(Color.WHITE)
+                            page.render(bmp, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+                            bitmaps.add(bmp)
+                        }
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            // PDF illisible/corrompu : on retourne ce qui a pu être rendu (éventuellement rien),
+            // l'appelant affiche alors le message d'erreur.
+        }
+        return bitmaps
+    }
+
     /** Fait pointer les 3 sélecteurs (Unité/Famille/ITEM) directement sur cet item et rafraîchit l'écran. */
     private fun navigateToItem(unite: String, famille: String, item: String) {
         bridesJob?.cancel()
         schemaJob?.cancel()
+        revisionJob?.cancel()
         selectedUnite = unite
         selectedFamille = famille
         selectedItem = item
@@ -400,6 +594,7 @@ class MainActivity : AppCompatActivity() {
         observeItems()
         observeBridesAndInspections()
         observeSchema()
+        observeItemRevision()
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -568,7 +763,7 @@ class MainActivity : AppCompatActivity() {
                         val key = Triple(entry.unite, entry.famille, entry.item)
                         val selectionne = key in pdfExportSelection
                         cell.addView(TextView(this@MainActivity).apply {
-                            text = entry.item
+                            text = entry.displayItem
                             // Couleur du texte = complétude (comme la fenêtre Filtre) ; fond jaune = marqué pour l'impression.
                             setTextColor(if (entry.complete) ContextCompat.getColor(this@MainActivity, R.color.conforme) else Color.RED)
                             setTypeface(typeface, if (selectionne) android.graphics.Typeface.BOLD else android.graphics.Typeface.NORMAL)
@@ -663,10 +858,12 @@ class MainActivity : AppCompatActivity() {
                 // collecte déjà active (observeUnites) se rechargera automatiquement.
                 bridesJob?.cancel()
                 schemaJob?.cancel()
+                revisionJob?.cancel()
                 adapter.submit(emptyList())
                 currentSchemaFile = null
                 binding.imgSchema.visibility = View.GONE
                 binding.emptySchemaLayout.visibility = View.VISIBLE
+                binding.tvItemRevision.visibility = View.GONE
                 selectedUnite = ""
                 selectedFamille = ""
                 selectedItem = ""

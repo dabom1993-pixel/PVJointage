@@ -115,3 +115,32 @@ interface ItemSchemaDao {
     @Query("SELECT COUNT(*) FROM item_schema")
     suspend fun count(): Int
 }
+
+@Dao
+interface ItemRevisionDao {
+    @Query("SELECT * FROM item_revision WHERE unite = :unite AND famille = :famille AND item = :item LIMIT 1")
+    fun get(unite: String, famille: String, item: String): Flow<ItemRevision?>
+
+    @Query("SELECT * FROM item_revision WHERE unite = :unite AND famille = :famille AND item = :item LIMIT 1")
+    suspend fun getOnce(unite: String, famille: String, item: String): ItemRevision?
+
+    /** Toutes les révisions connues (fenêtres Catalogue / Impression PDF : suffixe "-Rn" par item). */
+    @Query("SELECT * FROM item_revision")
+    suspend fun getAllOnce(): List<ItemRevision>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsert(revision: ItemRevision)
+}
+
+@Dao
+interface InspectionBaselineDao {
+    /** Instantané des contrôles au dernier export PDF de cet item (vide si jamais exporté). */
+    @Query("SELECT * FROM inspection_baseline WHERE unite = :unite AND famille = :famille AND item = :item")
+    suspend fun getForItem(unite: String, famille: String, item: String): List<InspectionBaseline>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertAll(baselines: List<InspectionBaseline>)
+
+    @Query("DELETE FROM inspection_baseline WHERE unite = :unite AND famille = :famille AND item = :item")
+    suspend fun deleteForItem(unite: String, famille: String, item: String)
+}

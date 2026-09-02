@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
@@ -66,8 +67,30 @@
                 android:layout_height="wrap_content"
                 android:textStyle="bold"
                 android:textSize="19sp"
-                android:textColor="@color/primary_dark"
-                android:layout_marginBottom="10dp"/>
+                android:textColor="@color/primary_dark"/>
+
+            <!-- Révision de l'item de cette bride : visible seulement s'il a été modifié après
+                 un export PDF (traçabilité, voir Repository.touchItemRevision). -->
+            <TextView
+                android:id="@+id/tvItemRevision"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:paddingStart="6dp"
+                android:paddingEnd="6dp"
+                android:paddingTop="2dp"
+                android:paddingBottom="2dp"
+                android:background="@color/accent"
+                android:textColor="@color/black"
+                android:textStyle="bold"
+                android:textSize="13sp"
+                android:visibility="gone"
+                tools:text="REV 1"
+                tools:visibility="visible"/>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="10dp"/>
 
             <!-- ETIQUETTE -->
             <androidx.cardview.widget.CardView android:layout_width="match_parent" android:layout_height="wrap_content" app:cardCornerRadius="8dp" app:cardElevation="2dp" android:layout_marginBottom="10dp">

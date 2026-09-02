@@ -69,6 +69,7 @@ class ChampActivity : AppCompatActivity() {
         loadBrideRef()
         loadInspection()
         setupPhotos()
+        observeItemRevision()
 
         binding.btnPrendrePhoto.setOnClickListener { requestCameraAndLaunch() }
     }
@@ -193,6 +194,21 @@ class ChampActivity : AppCompatActivity() {
         }
         tv.setTextColor(ContextCompat.getColor(this, color))
         tv.text = text
+    }
+
+    /** Badge "REV n" sous le contexte, tant que l'item de cette bride a été modifié après son dernier export PDF. */
+    private fun observeItemRevision() {
+        lifecycleScope.launch {
+            repo.getItemRevision(unite, famille, item).collect { rev ->
+                val revision = rev?.revision ?: 0
+                if (revision > 0) {
+                    binding.tvItemRevision.text = getString(R.string.rev_badge, revision)
+                    binding.tvItemRevision.visibility = android.view.View.VISIBLE
+                } else {
+                    binding.tvItemRevision.visibility = android.view.View.GONE
+                }
+            }
+        }
     }
 
     private fun setupPhotos() {

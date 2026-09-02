@@ -15,6 +15,9 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+/** "ITEM12" -> "ITEM12" si jamais révisé, "ITEM12-R1" à partir de la 1ère révision post-export. */
+fun itemDisplayLabel(item: String, revision: Int): String = if (revision > 0) "$item-R$revision" else item
+
 class Repository(private val appContext: Context) {
     private val db = AppDatabase.getInstance(appContext)
     private val seedImporter = SeedImporter(appContext.applicationContext, db)
@@ -97,7 +100,10 @@ class Repository(private val appContext: Context) {
         return File(dir, "classeur_reference.xlsm")
     }
 
-    data class CatalogueEntry(val unite: String, val famille: String, val item: String, val complete: Boolean)
+    data class CatalogueEntry(val unite: String, val famille: String, val item: String, val complete: Boolean, val revision: Int = 0) {
+        /** Libellé à afficher (filtres/catalogue/impression) : "$item" ou "$item-R$revision" si révisé. */
+        val displayItem: String get() = itemDisplayLabel(item, revision)
+    }
 
     /**
      * Vue d'ensemble Unité/Famille/Item pour la fenêtre "Catalogue" : un item est considéré
@@ -109,6 +115,8 @@ class Repository(private val appContext: Context) {
         val bridesByItem = db.brideCatalogDao().getAllOnce().groupBy { Triple(it.unite, it.famille, it.item) }
         val inspectionsByKey = db.inspectionResultDao().getAllOnce()
             .associateBy { "${it.unite}|${it.famille}|${it.item}|${it.rep}" }
+        val revisionsByItem = db.itemRevisionDao().getAllOnce()
+            .associateBy { Triple(it.unite, it.famille, it.item) }
 
         items.map { ic ->
             val brides = bridesByItem[Triple(ic.unite, ic.famille, ic.item)].orEmpty()
@@ -116,7 +124,8 @@ class Repository(private val appContext: Context) {
                 val insp = inspectionsByKey["${ic.unite}|${ic.famille}|${ic.item}|${b.rep}"]
                 insp != null && globalConformite(insp) != Conformite.EN_ATTENTE
             }
-            CatalogueEntry(ic.unite, ic.famille, ic.item, complete)
+            val revision = revisionsByItem[Triple(ic.unite, ic.famille, ic.item)]?.revision ?: 0
+            CatalogueEntry(ic.unite, ic.famille, ic.item, complete, revision)
         }
     }
 
@@ -154,6 +163,7 @@ class Repository(private val appContext: Context) {
     suspend fun saveInspection(result: InspectionResult) {
         db.inspectionResultDao().upsert(result)
         touchDate()
+        touchItemRevision(result.unite, result.famille, result.item)
     }
 
     // Photos
@@ -167,12 +177,55 @@ class Repository(private val appContext: Context) {
     suspend fun addPhoto(photo: Photo): Long {
         val id = db.photoDao().insert(photo)
         touchDate()
+        touchItemRevision(photo.unite, photo.famille, photo.item)
         return id
     }
 
     suspend fun deletePhoto(photo: Photo) {
         db.photoDao().delete(photo)
         touchDate()
+        touchItemRevision(photo.unite, photo.famille, photo.item)
+    }
+
+    // Révisions (traçabilité après export PDF)
+    fun getItemRevision(unite: String, famille: String, item: String): Flow<ItemRevision?> =
+        db.itemRevisionDao().get(unite, famille, item)
+
+    suspend fun getItemRevisionOnce(unite: String, famille: String, item: String): ItemRevision? =
+        db.itemRevisionDao().getOnce(unite, famille, item)
+
+    /**
+     * Marque l'item comme modifié : si un export PDF avait déjà eu lieu et qu'aucune révision
+     * n'était encore en cours depuis (revision == exportedRevision), fait avancer la révision
+     * d'un cran. Les modifications suivantes, avant le prochain export, ne la font pas ré-avancer.
+     */
+    private suspend fun touchItemRevision(unite: String, famille: String, item: String) {
+        val dao = db.itemRevisionDao()
+        val current = dao.getOnce(unite, famille, item) ?: ItemRevision(unite = unite, famille = famille, item = item)
+        val bumped = if (current.exportedRevision >= 0 && current.revision == current.exportedRevision) {
+            current.copy(revision = current.revision + 1)
+        } else current
+        dao.upsert(bumped.copy(lastModified = System.currentTimeMillis()))
+    }
+
+    /** Instantané des contrôles de chaque bride tel qu'il était au dernier export PDF de l'item (vide si jamais exporté). */
+    suspend fun getInspectionBaselineForItem(unite: String, famille: String, item: String): List<InspectionBaseline> =
+        db.inspectionBaselineDao().getForItem(unite, famille, item)
+
+    /**
+     * Figée après un export PDF réussi : la révision courante devient la nouvelle référence
+     * exportée, et l'état actuel des contrôles de chaque bride est capturé comme nouvelle "base"
+     * (remplace l'instantané précédent) — c'est à cette base que le prochain export comparera
+     * l'état courant pour savoir quelles brides dupliquer en "base" + "révisée".
+     */
+    suspend fun markItemExported(unite: String, famille: String, item: String) {
+        val dao = db.itemRevisionDao()
+        val current = dao.getOnce(unite, famille, item) ?: ItemRevision(unite = unite, famille = famille, item = item)
+        dao.upsert(current.copy(exportedRevision = current.revision, lastModified = System.currentTimeMillis()))
+
+        val inspections = db.inspectionResultDao().getForItem(unite, famille, item).first()
+        db.inspectionBaselineDao().deleteForItem(unite, famille, item)
+        db.inspectionBaselineDao().upsertAll(inspections.map { it.toBaseline() })
     }
 
     suspend fun countPhotos(unite: String, famille: String, item: String): Int =

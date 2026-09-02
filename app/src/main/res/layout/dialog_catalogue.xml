@@ -40,71 +40,135 @@
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:padding="10dp">
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/catalogue_filtrer"
-            android:layout_marginEnd="8dp"
-            android:textStyle="bold" />
-
-        <RadioGroup
-            android:id="@+id/filterGroup"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal">
-
-            <RadioButton
-                android:id="@+id/filterTous"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:checked="true"
-                android:text="@string/catalogue_tous"
-                android:layout_marginEnd="14dp" />
-
-            <RadioButton
-                android:id="@+id/filterComplets"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/catalogue_complets"
-                android:layout_marginEnd="14dp" />
-
-            <RadioButton
-                android:id="@+id/filterIncomplets"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/catalogue_incomplets" />
-        </RadioGroup>
-    </LinearLayout>
-
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="@string/catalogue_legende"
-        android:textSize="11sp"
-        android:textColor="@color/en_attente"
-        android:paddingStart="10dp"
-        android:paddingEnd="10dp"
-        android:paddingBottom="6dp" />
-
-    <HorizontalScrollView
-        android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1">
+        android:layout_weight="1"
+        android:orientation="horizontal">
 
-        <ScrollView
-            android:layout_width="wrap_content"
-            android:layout_height="match_parent">
+        <!-- Moitié gauche : catalogue Unité x Famille, avec filtre Tous/Complets/Incomplets. -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical">
 
-            <TableLayout
-                android:id="@+id/catalogueTable"
-                android:layout_width="wrap_content"
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:padding="10dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/catalogue_filtrer"
+                    android:layout_marginEnd="8dp"
+                    android:textStyle="bold" />
+
+                <RadioGroup
+                    android:id="@+id/filterGroup"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <RadioButton
+                        android:id="@+id/filterTous"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="true"
+                        android:text="@string/catalogue_tous"
+                        android:layout_marginEnd="14dp" />
+
+                    <RadioButton
+                        android:id="@+id/filterComplets"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/catalogue_complets"
+                        android:layout_marginEnd="14dp" />
+
+                    <RadioButton
+                        android:id="@+id/filterIncomplets"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/catalogue_incomplets" />
+                </RadioGroup>
+            </LinearLayout>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/catalogue_legende"
+                android:textSize="11sp"
+                android:textColor="@color/en_attente"
+                android:paddingStart="10dp"
+                android:paddingEnd="10dp"
+                android:paddingBottom="6dp" />
+
+            <HorizontalScrollView
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1">
+
+                <ScrollView
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent">
+
+                    <TableLayout
+                        android:id="@+id/catalogueTable"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:padding="10dp" />
+                </ScrollView>
+            </HorizontalScrollView>
+        </LinearLayout>
+
+        <View
+            android:layout_width="1dp"
+            android:layout_height="match_parent"
+            android:background="@color/en_attente" />
+
+        <!-- Moitié droite : même présentation, sans filtre — uniquement les items ayant au
+             moins un export PDF sur la tablette. Toucher un item ouvre son dernier PDF exporté
+             directement dans l'app (visionneuse interne, pas de fichier à sortir sur PC). -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/pdf_exports_titre"
+                android:textStyle="bold"
                 android:padding="10dp" />
-        </ScrollView>
-    </HorizontalScrollView>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/pdf_exports_legende"
+                android:textSize="11sp"
+                android:textColor="@color/en_attente"
+                android:paddingStart="10dp"
+                android:paddingEnd="10dp"
+                android:paddingBottom="6dp" />
+
+            <HorizontalScrollView
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1">
+
+                <ScrollView
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent">
+
+                    <TableLayout
+                        android:id="@+id/pdfExportsTable"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:padding="10dp" />
+                </ScrollView>
+            </HorizontalScrollView>
+        </LinearLayout>
+    </LinearLayout>
 </LinearLayout>

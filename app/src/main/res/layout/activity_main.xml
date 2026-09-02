@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
@@ -114,21 +115,38 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:orientation="horizontal">
-                    <TextView
+                    android:orientation="vertical">
+                    <LinearLayout
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="@string/date"
-                        android:textColor="#CCFFFFFF"
-                        android:textSize="12sp" />
+                        android:orientation="horizontal">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/date"
+                            android:textColor="#CCFFFFFF"
+                            android:textSize="12sp" />
+                        <TextView
+                            android:id="@+id/etDate"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="4dp"
+                            android:textColor="@color/white"
+                            android:textStyle="bold"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+                    <!-- Révision de l'ITEM sélectionné : visible seulement s'il a été modifié
+                         après un export PDF (traçabilité, voir Repository.touchItemRevision). -->
                     <TextView
-                        android:id="@+id/etDate"
+                        android:id="@+id/tvItemRevision"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="4dp"
-                        android:textColor="@color/white"
+                        android:textColor="@color/accent"
                         android:textStyle="bold"
-                        android:textSize="12sp" />
+                        android:textSize="12sp"
+                        android:visibility="gone"
+                        tools:text="REV 1"
+                        tools:visibility="visible" />
                 </LinearLayout>
             </LinearLayout>
         </LinearLayout>

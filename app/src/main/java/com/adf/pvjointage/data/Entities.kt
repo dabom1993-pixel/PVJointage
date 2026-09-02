@@ -134,3 +134,78 @@ data class ItemSchema(
     val item: String,
     val filePath: String
 )
+
+/**
+ * Traçabilité des révisions d'un ITEM après export PDF : dès qu'un export PDF a été fait pour
+ * cet item, toute modification ultérieure (contrôle ou photo, sur n'importe quelle bride de
+ * l'item) le fait passer en révision. La révision n'avance qu'une seule fois par cycle : elle
+ * reste affichée telle quelle tant qu'aucun nouvel export ne vient la figer comme référence.
+ */
+@Entity(tableName = "item_revision", indices = [Index(value = ["unite", "famille", "item"], unique = true)])
+data class ItemRevision(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val unite: String,
+    val famille: String,
+    val item: String,
+    // Révision courante de l'item (0 = jamais modifié après un export).
+    val revision: Int = 0,
+    // Révision figée lors du dernier export PDF (-1 = jamais exporté : pas de traçabilité à afficher).
+    val exportedRevision: Int = -1,
+    val lastModified: Long = System.currentTimeMillis()
+)
+
+/**
+ * Instantané des contrôles d'une bride (hors photos, non historisées) tel qu'il était lors du
+ * dernier export PDF de son item. Sert à savoir, à l'export suivant, quelles brides ont changé
+ * depuis (ExportManager) pour dupliquer leur page détail "de base" + "révisée". Remplacé en
+ * totalité (par item) à chaque export réussi — voir Repository.markItemExported.
+ */
+@Entity(tableName = "inspection_baseline", indices = [Index(value = ["unite", "famille", "item", "rep"], unique = true)])
+data class InspectionBaseline(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val unite: String,
+    val famille: String,
+    val item: String,
+    val rep: String,
+
+    val etiMiseSerree: String = "",
+    val etiNomDateLisible: String = "",
+
+    val jointMatiereConforme: String = "",
+    val jointDimensionCentrage: String = "",
+    val jointAspectNeuf: String = "",
+
+    val boulonNeuves: String = "",
+    val boulonRondelles: String = "",
+    val boulonEquilibrage: String = "",
+    val boulonGraissage: String = "",
+    val boulonLongueurDiametre: String = "",
+    val boulonMatiere: String = "",
+
+    val assemblageParallelisme: String = "",
+    val assemblageExcentration: String = "",
+
+    val remarque: String = ""
+)
+
+/** Copie les champs de contrôle (hors id/dateModification) vers un instantané "base". */
+fun InspectionResult.toBaseline(): InspectionBaseline = InspectionBaseline(
+    unite = unite, famille = famille, item = item, rep = rep,
+    etiMiseSerree = etiMiseSerree, etiNomDateLisible = etiNomDateLisible,
+    jointMatiereConforme = jointMatiereConforme, jointDimensionCentrage = jointDimensionCentrage, jointAspectNeuf = jointAspectNeuf,
+    boulonNeuves = boulonNeuves, boulonRondelles = boulonRondelles, boulonEquilibrage = boulonEquilibrage,
+    boulonGraissage = boulonGraissage, boulonLongueurDiametre = boulonLongueurDiametre, boulonMatiere = boulonMatiere,
+    assemblageParallelisme = assemblageParallelisme, assemblageExcentration = assemblageExcentration,
+    remarque = remarque
+)
+
+/** Reconstruit un [InspectionResult] "vitrine" (id/dateModification arbitraires) à partir d'un instantané, pour réutiliser telles quelles les fonctions de dessin du PDF. */
+fun InspectionBaseline.toInspectionResult(): InspectionResult = InspectionResult(
+    unite = unite, famille = famille, item = item, rep = rep,
+    etiMiseSerree = etiMiseSerree, etiNomDateLisible = etiNomDateLisible,
+    jointMatiereConforme = jointMatiereConforme, jointDimensionCentrage = jointDimensionCentrage, jointAspectNeuf = jointAspectNeuf,
+    boulonNeuves = boulonNeuves, boulonRondelles = boulonRondelles, boulonEquilibrage = boulonEquilibrage,
+    boulonGraissage = boulonGraissage, boulonLongueurDiametre = boulonLongueurDiametre, boulonMatiere = boulonMatiere,
+    assemblageParallelisme = assemblageParallelisme, assemblageExcentration = assemblageExcentration,
+    remarque = remarque
+)
