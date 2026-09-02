@@ -55,8 +55,18 @@ class Repository(private val appContext: Context) {
                 db.itemSchemaDao().insertAll(schemas)
             }
             // Client / Lieu proviennent désormais du fichier Excel importé (non saisis dans l'app).
+            // La sélection Unité/Famille/Item mémorisée est aussi remise à vide ici (pas seulement
+            // côté UI) : sinon, comme le catalogue peut réutiliser les mêmes noms d'un import à
+            // l'autre, MainActivity pouvait restaurer une ancienne sélection valide en apparence
+            // (même Unité/Famille) mais dont l'Item ne correspondait plus à rien dans les
+            // nouvelles données, laissant la liste des items vide.
             val current = db.pvHeaderDao().getHeaderOnce() ?: PvHeader()
-            db.pvHeaderDao().save(current.copy(client = parsed.client, lieu = parsed.lieu, date = today()))
+            db.pvHeaderDao().save(
+                current.copy(
+                    client = parsed.client, lieu = parsed.lieu, date = today(),
+                    uniteSelectionnee = "", familleSelectionnee = "", itemSelectionne = ""
+                )
+            )
         }
 
         // Conserve une copie locale du classeur importé : c'est elle que l'export Excel

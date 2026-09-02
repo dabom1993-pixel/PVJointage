@@ -179,10 +179,6 @@ class MainActivity : AppCompatActivity() {
                         selectedItem = ""
                         observeFamilles()
                     }
-                    if (unites.isNotEmpty() && selectedUnite.isBlank()) {
-                        selectedUnite = unites.first()
-                        observeFamilles()
-                    }
                 }
             }
         }
@@ -197,10 +193,6 @@ class MainActivity : AppCompatActivity() {
                 populateSpinner(binding.spFamille, familles, { selectedFamille }) { chosen ->
                     selectedFamille = chosen
                     selectedItem = ""
-                    observeItems()
-                }
-                if (familles.isNotEmpty() && selectedFamille.isBlank()) {
-                    selectedFamille = familles.first()
                     observeItems()
                 }
             }
@@ -218,10 +210,6 @@ class MainActivity : AppCompatActivity() {
                     persistSelection()
                     observeBridesAndInspections()
                     observeSchema()
-                }
-                if (items.isNotEmpty() && selectedItem.isBlank()) {
-                    selectedItem = items.first()
-                    persistSelection()
                 }
                 if (selectedItem.isNotBlank()) {
                     observeBridesAndInspections()
@@ -262,6 +250,12 @@ class MainActivity : AppCompatActivity() {
             }
             override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
+        // La sélection mémorisée (ancien fichier importé, session précédente...) n'existe plus
+        // dans cette nouvelle liste : le spinner retombe visuellement sur le 1er élément (comportement
+        // par défaut d'Android), mais sans ceci notre état interne (selectedUnite/Famille/Item) resterait
+        // bloqué sur l'ancienne valeur invalide et les listes suivantes (Famille, Item) resteraient
+        // vides puisque interrogées avec cette valeur qui n'existe plus.
+        if (idx < 0 && values.isNotEmpty()) onSelected(values.first())
     }
 
     private var bridesJob: kotlinx.coroutines.Job? = null
