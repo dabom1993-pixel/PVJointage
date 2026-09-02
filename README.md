@@ -58,8 +58,14 @@ recherche de mise à jour directement depuis l'app :
   demandée. Seule la confirmation système d'installation reste incontournable
   (protection Android : impossible à supprimer par du code) — au tout premier
   usage, il faut aussi autoriser une fois "Installer des applications
-  inconnues" pour PV Jointage. Au redémarrage après installation, l'app
-  affiche "Programme mis à jour, vous disposez de la dernière version".
+  inconnues" pour PV Jointage.
+
+Les données locales (base de données, photos, schémas) ne sont **jamais
+effacées** par cette mise à jour : tant que le package et la clé de
+signature restent identiques (clé de debug stable, voir plus bas), Android
+traite l'opération comme une simple mise à jour de l'app existante, pas
+comme une désinstallation/réinstallation. Une copie de sécurité de la base
+est en plus faite automatiquement juste avant chaque installation.
 
 ---
 

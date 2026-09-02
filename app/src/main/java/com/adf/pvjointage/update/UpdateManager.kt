@@ -26,10 +26,12 @@ object UpdateManager {
         "https://api.github.com/repos/dabom1993-pixel/PVJointage/releases/tags/tablette-latest"
     private const val ASSET_NAME = "PVJointage.apk"
 
+    // Doit rester identique au nom de base passé à Room.databaseBuilder dans AppDatabase.kt.
+    private const val DB_NAME = "pv_jointage.db"
+
     private const val PREFS_NAME = "update_prefs"
     private const val KEY_LAST_ASSET_ID = "last_asset_id"
     private const val KEY_PENDING_ASSET_ID = "pending_asset_id"
-    private const val KEY_JUST_UPDATED = "just_updated"
 
     data class UpdateInfo(
         val assetId: Long,
@@ -121,6 +123,31 @@ object UpdateManager {
         prefs(context).edit().putLong(KEY_PENDING_ASSET_ID, info.assetId).apply()
     }
 
+    /**
+     * Copie de secours de la base de données locale, juste avant de lancer l'installation.
+     *
+     * En théorie déjà superflu : tant que le nouvel APK garde le même package et la même
+     * signature (clé de debug stable, voir build.gradle.kts), Android traite l'opération comme
+     * une simple mise à jour et ne touche jamais aux données de l'app (base Room, préférences,
+     * photos, schémas) — contrairement à une désinstallation. Cette copie reste une sécurité
+     * supplémentaire, best-effort : une erreur ici ne doit jamais empêcher la mise à jour.
+     */
+    fun backupDatabaseBeforeInstall(context: Context) {
+        try {
+            val dbFile = context.getDatabasePath(DB_NAME)
+            if (!dbFile.exists()) return
+            val backupDir = File(context.filesDir, "backup").apply { mkdirs() }
+            // Les fichiers -wal/-shm (mode WAL de SQLite) contiennent des écritures pas encore
+            // fusionnées dans le fichier principal : à copier aussi s'ils existent.
+            listOf("", "-wal", "-shm").forEach { suffix ->
+                val src = File(dbFile.parentFile, DB_NAME + suffix)
+                if (src.exists()) src.copyTo(File(backupDir, "$DB_NAME$suffix.bak"), overwrite = true)
+            }
+        } catch (_: Exception) {
+            // Best-effort : voir commentaire ci-dessus.
+        }
+    }
+
     /** Intent système d'installation de l'APK téléchargé (déclenche la confirmation OS, incontournable). */
     fun buildInstallIntent(context: Context, apkFile: File): Intent {
         val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", apkFile)
@@ -130,7 +157,11 @@ object UpdateManager {
         }
     }
 
-    /** Appelé par [UpdateInstalledReceiver] quand l'app vient d'être remplacée par la mise à jour en attente. */
+    /**
+     * Appelé par [UpdateInstalledReceiver] quand l'app vient d'être remplacée par la mise à jour
+     * en attente : fait juste avancer la référence locale (aucun message affiché à l'utilisateur),
+     * pour que le prochain contrôle ne re-propose pas la même version.
+     */
     fun onPackageReplaced(context: Context) {
         val p = prefs(context)
         val pending = p.getLong(KEY_PENDING_ASSET_ID, -1L)
@@ -138,17 +169,8 @@ object UpdateManager {
             p.edit()
                 .putLong(KEY_LAST_ASSET_ID, pending)
                 .remove(KEY_PENDING_ASSET_ID)
-                .putBoolean(KEY_JUST_UPDATED, true)
                 .apply()
         }
-    }
-
-    /** Lu une seule fois au démarrage de l'écran principal : true si on vient de s'auto-mettre à jour. */
-    fun consumeJustUpdatedFlag(context: Context): Boolean {
-        val p = prefs(context)
-        val value = p.getBoolean(KEY_JUST_UPDATED, false)
-        if (value) p.edit().putBoolean(KEY_JUST_UPDATED, false).apply()
-        return value
     }
 
     private fun prefs(context: Context) =

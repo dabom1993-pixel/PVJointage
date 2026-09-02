@@ -36,7 +36,6 @@ import com.adf.pvjointage.databinding.ActivityMainBinding
 import com.adf.pvjointage.databinding.DialogCatalogueBinding
 import com.adf.pvjointage.databinding.DialogPdfExportBinding
 import com.adf.pvjointage.databinding.DialogSchemaZoomBinding
-import com.adf.pvjointage.databinding.DialogUpdateDoneBinding
 import com.adf.pvjointage.databinding.DialogUpdateProgressBinding
 import com.adf.pvjointage.export.ExportManager
 import com.adf.pvjointage.update.UpdateManager
@@ -99,15 +98,7 @@ class MainActivity : AppCompatActivity() {
     private val unknownSourcesLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         val apk = pendingApkFile
         pendingApkFile = null
-        if (apk == null) return@registerForActivityResult
-        if (canInstallPackages()) {
-            startActivity(UpdateManager.buildInstallIntent(this, apk))
-        } else {
-            AlertDialog.Builder(this)
-                .setMessage(R.string.maj_autorisation_refusee)
-                .setPositiveButton(R.string.maj_aucune_bouton, null)
-                .show()
-        }
+        if (apk != null) attemptInstall(apk)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -131,12 +122,6 @@ class MainActivity : AppCompatActivity() {
 
         binding.btnCatalogue.setOnClickListener { showCatalogueDialog() }
         binding.cardLogo.setOnClickListener { onUpdateButtonClicked() }
-
-        // Si l'app vient d'être relancée juste après s'être auto-mise à jour (bouton logo),
-        // on l'affiche une seule fois puis on efface le drapeau.
-        if (UpdateManager.consumeJustUpdatedFlag(this)) {
-            showUpdateDoneDialog()
-        }
 
         observeBridesAndInspections()
     }
@@ -763,6 +748,10 @@ class MainActivity : AppCompatActivity() {
      */
     private fun attemptInstall(apkFile: File) {
         if (canInstallPackages()) {
+            // Sécurité supplémentaire : copie de la base locale avant l'installation (voir
+            // UpdateManager.backupDatabaseBeforeInstall - une mise à jour normale, même
+            // package/signature, ne doit de toute façon jamais effacer les données de l'app).
+            UpdateManager.backupDatabaseBeforeInstall(this)
             android.widget.Toast.makeText(this, R.string.maj_confirmer_installation, android.widget.Toast.LENGTH_LONG).show()
             startActivity(UpdateManager.buildInstallIntent(this, apkFile))
         } else {
@@ -799,18 +788,5 @@ class MainActivity : AppCompatActivity() {
             .setMessage(getString(R.string.maj_erreur, e.message ?: e.javaClass.simpleName))
             .setPositiveButton(R.string.maj_aucune_bouton, null)
             .show()
-    }
-
-    /**
-     * Confirmation finale après auto-mise à jour : un bouton dédié pleine largeur, texte centré,
-     * non tronqué et non capitalisé (contrairement au bouton standard d'AlertDialog, contraint
-     * en largeur et forcé en MAJUSCULES par le thème MaterialComponents).
-     */
-    private fun showUpdateDoneDialog() {
-        val dialogBinding = DialogUpdateDoneBinding.inflate(layoutInflater)
-        val dialog = AlertDialog.Builder(this)
-            .setView(dialogBinding.root)
-            .show()
-        dialogBinding.btnMajTermine.setOnClickListener { dialog.dismiss() }
     }
 }

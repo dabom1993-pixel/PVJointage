@@ -121,7 +121,5 @@
     <string name="maj_autoriser_sources_titre">Autorisation nécessaire (une seule fois)</string>
     <string name="maj_autoriser_sources_message">Pour installer les mises à jour, autorisez PV Jointage à installer des applications sur cette tablette, puis revenez à l\'écran précédent.</string>
     <string name="maj_autoriser_sources_bouton">Autoriser</string>
-    <string name="maj_autorisation_refusee">Autorisation non accordée : la mise à jour n\'a pas pu être installée. Touchez à nouveau le logo pour réessayer.</string>
     <string name="maj_erreur">Erreur lors de la mise à jour : %1$s</string>
-    <string name="maj_termine_bouton">Programme mis à jour, vous disposez de la dernière version</string>
 </resources>
