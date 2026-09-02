@@ -102,7 +102,7 @@
     <string name="export_option_excel">Excel - Mettre à jour le fichier importé</string>
     <string name="export_option_pdf">PDF - Impression des items</string>
     <string name="pdf_export_titre">IMPRESSION PDF</string>
-    <string name="pdf_export_legende">Rouge = item non rempli à 100 %  ·  Vert = item complet  ·  Fond jaune = marqué pour l\'impression. Touchez un item pour le marquer, ou une Famille/Unité pour marquer tous ses items.</string>
+    <string name="pdf_export_legende">Rouge = item non complet à 100 %  ·  Vert = item complet à 100 %  ·  Fond jaune = marqué pour l\'impression. Touchez un item, une Famille ou une Unité pour le/la marquer.</string>
     <string name="pdf_export_tout_selectionner">Tout sélectionner</string>
     <string name="pdf_export_tout_deselectionner">Tout désélectionner</string>
     <string name="pdf_export_selection_count">%1$d item(s) sélectionné(s)</string>

@@ -36,6 +36,7 @@ import com.adf.pvjointage.databinding.ActivityMainBinding
 import com.adf.pvjointage.databinding.DialogCatalogueBinding
 import com.adf.pvjointage.databinding.DialogPdfExportBinding
 import com.adf.pvjointage.databinding.DialogSchemaZoomBinding
+import com.adf.pvjointage.databinding.DialogUpdateDoneBinding
 import com.adf.pvjointage.databinding.DialogUpdateProgressBinding
 import com.adf.pvjointage.export.ExportManager
 import com.adf.pvjointage.update.UpdateManager
@@ -134,9 +135,7 @@ class MainActivity : AppCompatActivity() {
         // Si l'app vient d'être relancée juste après s'être auto-mise à jour (bouton logo),
         // on l'affiche une seule fois puis on efface le drapeau.
         if (UpdateManager.consumeJustUpdatedFlag(this)) {
-            AlertDialog.Builder(this)
-                .setPositiveButton(R.string.maj_termine_bouton, null)
-                .show()
+            showUpdateDoneDialog()
         }
 
         observeBridesAndInspections()
@@ -466,6 +465,9 @@ class MainActivity : AppCompatActivity() {
 
     private val pdfExportSelection = mutableSetOf<Triple<String, String, String>>()
 
+    /** Jaune "pur" RVB(255,255,0) demandé pour marquer un item à imprimer (pas un jaune pastel). */
+    private val pdfSelectionYellow = Color.rgb(255, 255, 0)
+
     /** Fenêtre d'impression PDF (façon "Filtre") : sélection multiple d'items, impression groupée (1 PDF par item). */
     private fun showPdfExportDialog() {
         pdfExportSelection.clear()
@@ -473,6 +475,7 @@ class MainActivity : AppCompatActivity() {
         val dialog = Dialog(this, android.R.style.Theme_Black_NoTitleBar_Fullscreen)
         dialog.setContentView(dialogBinding.root)
         dialogBinding.btnFermerPdfExport.setOnClickListener { dialog.dismiss() }
+        dialogBinding.tvLegendePdfExport.text = buildPdfExportLegende()
 
         lifecycleScope.launch {
             val entries = repo.getCatalogueOverview()
@@ -504,6 +507,27 @@ class MainActivity : AppCompatActivity() {
             render()
         }
         dialog.show()
+    }
+
+    /** Légende de la fenêtre Impression PDF, avec "Rouge"/"Vert"/"Fond jaune" mis en forme exactement comme les items. */
+    private fun buildPdfExportLegende(): CharSequence {
+        val text = getString(R.string.pdf_export_legende)
+        val spannable = android.text.SpannableString(text)
+        fun colorText(word: String, color: Int) {
+            val start = text.indexOf(word)
+            if (start < 0) return
+            spannable.setSpan(android.text.style.ForegroundColorSpan(color), start, start + word.length, android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+            spannable.setSpan(android.text.style.StyleSpan(android.graphics.Typeface.BOLD), start, start + word.length, android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+        }
+        colorText("Rouge", Color.RED)
+        colorText("Vert", ContextCompat.getColor(this, R.color.conforme))
+        val jauneStart = text.indexOf("Fond jaune")
+        if (jauneStart >= 0) {
+            val jauneEnd = jauneStart + "Fond jaune".length
+            spannable.setSpan(android.text.style.BackgroundColorSpan(pdfSelectionYellow), jauneStart, jauneEnd, android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+            spannable.setSpan(android.text.style.StyleSpan(android.graphics.Typeface.BOLD), jauneStart, jauneEnd, android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+        }
+        return spannable
     }
 
     /** Grille Unité (lignes) × Famille (colonnes) : touche = bascule la sélection (item seul, ou tous les items d'une famille/unité). */
@@ -563,7 +587,7 @@ class MainActivity : AppCompatActivity() {
                             // Couleur du texte = complétude (comme la fenêtre Filtre) ; fond jaune = marqué pour l'impression.
                             setTextColor(if (entry.complete) ContextCompat.getColor(this@MainActivity, R.color.conforme) else Color.RED)
                             setTypeface(typeface, if (selectionne) android.graphics.Typeface.BOLD else android.graphics.Typeface.NORMAL)
-                            setBackgroundColor(if (selectionne) Color.parseColor("#FFF9C4") else Color.TRANSPARENT)
+                            setBackgroundColor(if (selectionne) pdfSelectionYellow else Color.TRANSPARENT)
                             textSize = 13f
                             setPadding(6, 4, 6, 4)
                             setOnClickListener {
@@ -775,5 +799,18 @@ class MainActivity : AppCompatActivity() {
             .setMessage(getString(R.string.maj_erreur, e.message ?: e.javaClass.simpleName))
             .setPositiveButton(R.string.maj_aucune_bouton, null)
             .show()
+    }
+
+    /**
+     * Confirmation finale après auto-mise à jour : un bouton dédié pleine largeur, texte centré,
+     * non tronqué et non capitalisé (contrairement au bouton standard d'AlertDialog, contraint
+     * en largeur et forcé en MAJUSCULES par le thème MaterialComponents).
+     */
+    private fun showUpdateDoneDialog() {
+        val dialogBinding = DialogUpdateDoneBinding.inflate(layoutInflater)
+        val dialog = AlertDialog.Builder(this)
+            .setView(dialogBinding.root)
+            .show()
+        dialogBinding.btnMajTermine.setOnClickListener { dialog.dismiss() }
     }
 }

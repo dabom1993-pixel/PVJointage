@@ -74,6 +74,7 @@
     </LinearLayout>
 
     <TextView
+        android:id="@+id/tvLegendePdfExport"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="@string/pdf_export_legende"
