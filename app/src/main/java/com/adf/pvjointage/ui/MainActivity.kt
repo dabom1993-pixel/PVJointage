@@ -4,7 +4,9 @@ import android.app.Dialog
 import android.content.Intent
 import android.graphics.Color
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import android.view.GestureDetector
 import android.view.Menu
 import android.view.MenuItem
@@ -34,7 +36,9 @@ import com.adf.pvjointage.databinding.ActivityMainBinding
 import com.adf.pvjointage.databinding.DialogCatalogueBinding
 import com.adf.pvjointage.databinding.DialogPdfExportBinding
 import com.adf.pvjointage.databinding.DialogSchemaZoomBinding
+import com.adf.pvjointage.databinding.DialogUpdateProgressBinding
 import com.adf.pvjointage.export.ExportManager
+import com.adf.pvjointage.update.UpdateManager
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import java.io.File
@@ -85,6 +89,26 @@ class MainActivity : AppCompatActivity() {
         if (workbook != null && sheetName != null) importFromExcel(workbook, sheetName, treeUri)
     }
 
+    // --- Mise à jour de l'application (bouton logo) ---------------------------------------
+    private var updateCheckInProgress = false
+    private var updateProgressBinding: DialogUpdateProgressBinding? = null
+    private var pendingApkFile: File? = null
+
+    /** Retour de l'écran "Autoriser l'installation d'apps inconnues" : reprend l'installation si accordée. */
+    private val unknownSourcesLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+        val apk = pendingApkFile
+        pendingApkFile = null
+        if (apk == null) return@registerForActivityResult
+        if (canInstallPackages()) {
+            startActivity(UpdateManager.buildInstallIntent(this, apk))
+        } else {
+            AlertDialog.Builder(this)
+                .setMessage(R.string.maj_autorisation_refusee)
+                .setPositiveButton(R.string.maj_aucune_bouton, null)
+                .show()
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
@@ -105,6 +129,15 @@ class MainActivity : AppCompatActivity() {
         }
 
         binding.btnCatalogue.setOnClickListener { showCatalogueDialog() }
+        binding.cardLogo.setOnClickListener { onUpdateButtonClicked() }
+
+        // Si l'app vient d'être relancée juste après s'être auto-mise à jour (bouton logo),
+        // on l'affiche une seule fois puis on efface le drapeau.
+        if (UpdateManager.consumeJustUpdatedFlag(this)) {
+            AlertDialog.Builder(this)
+                .setPositiveButton(R.string.maj_termine_bouton, null)
+                .show()
+        }
 
         observeBridesAndInspections()
     }
@@ -646,5 +679,105 @@ class MainActivity : AppCompatActivity() {
                 workbook.close()
             }
         }
+    }
+
+    // --- Mise à jour de l'application (bouton logo) ---------------------------------------
+
+    /** Recherche une mise à jour ; navigue vers "pas de mise à jour" ou le téléchargement. */
+    private fun onUpdateButtonClicked() {
+        if (updateCheckInProgress) return
+        updateCheckInProgress = true
+        val searchDialog = showUpdateProgressDialog(getString(R.string.maj_recherche), indeterminate = true)
+        lifecycleScope.launch {
+            val info = try {
+                UpdateManager.fetchLatestUpdateInfo()
+            } catch (e: Exception) {
+                searchDialog.dismiss()
+                updateCheckInProgress = false
+                showUpdateErrorDialog(e)
+                return@launch
+            }
+            searchDialog.dismiss()
+            if (info == null || !UpdateManager.hasUpdate(this@MainActivity, info)) {
+                updateCheckInProgress = false
+                AlertDialog.Builder(this@MainActivity)
+                    .setMessage(R.string.maj_aucune_message)
+                    .setPositiveButton(R.string.maj_aucune_bouton, null)
+                    .show()
+            } else {
+                downloadAndInstallUpdate(info)
+            }
+        }
+    }
+
+    /** Télécharge l'APK en arrière-plan (avec message de progression) puis lance l'installation. */
+    private fun downloadAndInstallUpdate(info: UpdateManager.UpdateInfo) {
+        val progressDialog = showUpdateProgressDialog(getString(R.string.maj_telechargement, 0), indeterminate = false)
+        lifecycleScope.launch {
+            try {
+                val apkFile = UpdateManager.download(this@MainActivity, info) { percent ->
+                    runOnUiThread {
+                        updateProgressBinding?.progressBar?.progress = percent
+                        updateProgressBinding?.tvProgressMessage?.text = getString(R.string.maj_telechargement, percent)
+                    }
+                }
+                updateProgressBinding?.tvProgressMessage?.text = getString(R.string.maj_installation)
+                // Mémorisé avant de lancer l'intent : si l'utilisateur confirme l'installation
+                // système, UpdateInstalledReceiver validera cette version au redémarrage.
+                UpdateManager.markPendingInstall(this@MainActivity, info)
+                progressDialog.dismiss()
+                updateCheckInProgress = false
+                attemptInstall(apkFile)
+            } catch (e: Exception) {
+                progressDialog.dismiss()
+                updateCheckInProgress = false
+                showUpdateErrorDialog(e)
+            }
+        }
+    }
+
+    /**
+     * Lance l'installation. Sur Android 8+, si l'app n'a pas encore le droit d'installer des
+     * paquets, demande l'autorisation une seule fois puis reprend automatiquement au retour.
+     * Le popup d'installation lui-même reste incontournable (protection du système Android).
+     */
+    private fun attemptInstall(apkFile: File) {
+        if (canInstallPackages()) {
+            android.widget.Toast.makeText(this, R.string.maj_confirmer_installation, android.widget.Toast.LENGTH_LONG).show()
+            startActivity(UpdateManager.buildInstallIntent(this, apkFile))
+        } else {
+            pendingApkFile = apkFile
+            AlertDialog.Builder(this)
+                .setTitle(R.string.maj_autoriser_sources_titre)
+                .setMessage(R.string.maj_autoriser_sources_message)
+                .setPositiveButton(R.string.maj_autoriser_sources_bouton) { _, _ ->
+                    unknownSourcesLauncher.launch(
+                        Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:$packageName"))
+                    )
+                }
+                .setNegativeButton(R.string.dialog_non, null)
+                .show()
+        }
+    }
+
+    private fun canInstallPackages(): Boolean =
+        Build.VERSION.SDK_INT < Build.VERSION_CODES.O || packageManager.canRequestPackageInstalls()
+
+    private fun showUpdateProgressDialog(message: String, indeterminate: Boolean): AlertDialog {
+        val dialogBinding = DialogUpdateProgressBinding.inflate(layoutInflater)
+        dialogBinding.tvProgressMessage.text = message
+        dialogBinding.progressBar.isIndeterminate = indeterminate
+        updateProgressBinding = dialogBinding
+        return AlertDialog.Builder(this)
+            .setView(dialogBinding.root)
+            .setCancelable(false)
+            .show()
+    }
+
+    private fun showUpdateErrorDialog(e: Exception) {
+        AlertDialog.Builder(this)
+            .setMessage(getString(R.string.maj_erreur, e.message ?: e.javaClass.simpleName))
+            .setPositiveButton(R.string.maj_aucune_bouton, null)
+            .show()
     }
 }

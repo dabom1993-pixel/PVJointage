@@ -3,4 +3,5 @@
     <external-files-path name="photos" path="photos/" />
     <external-files-path name="schemas" path="schemas/" />
     <external-files-path name="exports" path="exports/" />
+    <files-path name="updates" path="updates/" />
 </paths>

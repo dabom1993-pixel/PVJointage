@@ -27,13 +27,18 @@
                 android:gravity="center_vertical">
 
                 <androidx.cardview.widget.CardView
+                    android:id="@+id/cardLogo"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginEnd="10dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?attr/selectableItemBackground"
                     app:cardBackgroundColor="@color/white"
                     app:cardCornerRadius="6dp"
                     app:cardElevation="0dp">
 
+                    <!-- Bouton "Rechercher une mise à jour" : appuyer sur le logo. -->
                     <ImageView
                         android:id="@+id/imgLogo"
                         android:layout_width="wrap_content"

@@ -49,6 +49,18 @@ Comme la clé de signature debug est stable (voir plus bas), chaque nouvelle
 installation remplace proprement la précédente sans perte de données, sans
 avoir à désinstaller l'app ni à régénérer le QR code.
 
+**Alternative une fois l'app installée : le bouton logo.** Sur l'écran
+principal, toucher le **logo Groupe ADF** (en haut à gauche) déclenche une
+recherche de mise à jour directement depuis l'app :
+- Aucune mise à jour disponible → message "Pas de mise à jour nécessaire".
+- Une mise à jour est disponible → téléchargement en arrière-plan (barre de
+  progression), puis installation. Aucune connexion à un compte n'est
+  demandée. Seule la confirmation système d'installation reste incontournable
+  (protection Android : impossible à supprimer par du code) — au tout premier
+  usage, il faut aussi autoriser une fois "Installer des applications
+  inconnues" pour PV Jointage. Au redémarrage après installation, l'app
+  affiche "Programme mis à jour, vous disposez de la dernière version".
+
 ---
 
 ## Ce qui a été repris de l'Excel

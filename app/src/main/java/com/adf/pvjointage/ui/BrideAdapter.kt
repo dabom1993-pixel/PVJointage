@@ -73,7 +73,7 @@ class BrideAdapter(
 
         private fun setChip(ctx: Context, tv: android.widget.TextView, c: Conformite, withLabel: Boolean = false) {
             val (color, text) = when (c) {
-                Conformite.CONFORME -> R.color.conforme to (if (withLabel) ctx.getString(R.string.statut_conforme) else "OK")
+                Conformite.CONFORME -> R.color.conforme to (if (withLabel) ctx.getString(R.string.statut_conforme) else "C")
                 Conformite.NON_CONFORME -> R.color.non_conforme to (if (withLabel) ctx.getString(R.string.statut_non_conforme) else "NC")
                 Conformite.EN_ATTENTE -> R.color.en_attente to (if (withLabel) ctx.getString(R.string.statut_attente) else "-")
             }

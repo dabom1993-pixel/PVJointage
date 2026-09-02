@@ -96,8 +96,10 @@ class ChampActivity : AppCompatActivity() {
 
         binding.selAssemblageParallelisme.setLabel(getString(R.string.assemblage_parallelisme))
         binding.selAssemblageParallelisme.setAutreVisible(false)
+        binding.selAssemblageParallelisme.setIcon(R.drawable.ic_parallelisme)
         binding.selAssemblageExcentration.setLabel(getString(R.string.assemblage_excentration))
         binding.selAssemblageExcentration.setAutreVisible(false)
+        binding.selAssemblageExcentration.setIcon(R.drawable.ic_excentration)
 
         // Chaque changement de statut est immédiatement enregistré (plus de bouton "Enregistrer").
         val listener: (Etat) -> Unit = { refreshStatuts(); saveInspection() }

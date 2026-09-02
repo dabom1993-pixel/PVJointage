@@ -54,8 +54,8 @@
     <string name="remarque_hint">Texte libre (5 lignes maximum)</string>
     <string name="section_photo">PHOTO (ETIQUETTE &amp; ASSEMBLAGE)</string>
 
-    <string name="oui">O</string>
-    <string name="non">N</string>
+    <string name="oui">C</string>
+    <string name="non">NC</string>
     <string name="autre">A</string>
 
     <string name="btn_terrain">B-Champ</string>
@@ -110,4 +110,18 @@
     <string name="pdf_export_aucune_selection">Sélectionnez au moins un item à imprimer.</string>
     <string name="pdf_export_en_cours">Génération des PDF en cours…</string>
     <string name="pdf_export_termine">%1$d PDF générés dans le dossier exports.</string>
+
+    <!-- Mise à jour (bouton logo, écran principal) -->
+    <string name="maj_recherche">Recherche de mise à jour…</string>
+    <string name="maj_aucune_message">Pas de mise à jour nécessaire</string>
+    <string name="maj_aucune_bouton">OK</string>
+    <string name="maj_telechargement">Téléchargement de la mise à jour… %1$d %%</string>
+    <string name="maj_installation">Installation…</string>
+    <string name="maj_confirmer_installation">Confirmez l\'installation dans la fenêtre qui va s\'afficher pour terminer la mise à jour.</string>
+    <string name="maj_autoriser_sources_titre">Autorisation nécessaire (une seule fois)</string>
+    <string name="maj_autoriser_sources_message">Pour installer les mises à jour, autorisez PV Jointage à installer des applications sur cette tablette, puis revenez à l\'écran précédent.</string>
+    <string name="maj_autoriser_sources_bouton">Autoriser</string>
+    <string name="maj_autorisation_refusee">Autorisation non accordée : la mise à jour n\'a pas pu être installée. Touchez à nouveau le logo pour réessayer.</string>
+    <string name="maj_erreur">Erreur lors de la mise à jour : %1$s</string>
+    <string name="maj_termine_bouton">Programme mis à jour, vous disposez de la dernière version</string>
 </resources>

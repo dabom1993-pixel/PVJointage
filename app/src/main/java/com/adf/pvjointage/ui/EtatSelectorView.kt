@@ -3,6 +3,7 @@ package com.adf.pvjointage.ui
 import android.content.Context
 import android.util.AttributeSet
 import android.widget.Button
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.core.content.ContextCompat
@@ -20,6 +21,7 @@ class EtatSelectorView @JvmOverloads constructor(
 ) : LinearLayout(context, attrs) {
 
     private val tvLabel: TextView
+    private val ivIcon: ImageView
     private val btnOui: Button
     private val btnNon: Button
     private val btnAutre: Button
@@ -32,6 +34,7 @@ class EtatSelectorView @JvmOverloads constructor(
     init {
         inflate(context, R.layout.view_etat_selector, this)
         tvLabel = findViewById(R.id.tvLabel)
+        ivIcon = findViewById(R.id.ivIcon)
         btnOui = findViewById(R.id.btnOui)
         btnNon = findViewById(R.id.btnNon)
         btnAutre = findViewById(R.id.btnAutre)
@@ -44,6 +47,16 @@ class EtatSelectorView @JvmOverloads constructor(
 
     fun setLabel(text: String) {
         tvLabel.text = text
+    }
+
+    /** Petit schéma à côté du libellé (parallélisme / excentration). null masque l'icône. */
+    fun setIcon(iconRes: Int?) {
+        if (iconRes == null) {
+            ivIcon.visibility = GONE
+        } else {
+            ivIcon.setImageResource(iconRes)
+            ivIcon.visibility = VISIBLE
+        }
     }
 
     fun setAutreVisible(visible: Boolean) {

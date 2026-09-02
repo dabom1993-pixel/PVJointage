@@ -4,6 +4,10 @@
 
     <uses-feature android:name="android.hardware.camera" android:required="false" />
     <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Nécessaire pour que l'app puisse installer elle-même l'APK de mise à jour
+         (bouton logo, écran principal) sans passer par le Play Store. -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
     <application
         android:name=".PvApp"
@@ -48,6 +52,17 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths" />
         </provider>
+
+        <!-- Reçoit la notification système envoyée à l'app juste après qu'elle a été
+             remplacée par une mise à jour (déclenchée par le bouton logo), pour afficher
+             la confirmation "Programme mis à jour" au redémarrage. -->
+        <receiver
+            android:name=".update.UpdateInstalledReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
     </application>
 
 </manifest>
