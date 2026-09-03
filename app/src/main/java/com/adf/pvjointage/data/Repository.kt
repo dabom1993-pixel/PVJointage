@@ -88,10 +88,14 @@ class Repository(private val appContext: Context) {
     suspend fun exportNativeExcel(): String = withContext(Dispatchers.IO) {
         val sheetName = prefs.lastImportSheetName
             ?: throw ExcelImporter.ExcelImportException("Importez d'abord un fichier Excel avant d'exporter.")
+        val header = db.pvHeaderDao().getHeaderOnce()
         val brides = db.brideCatalogDao().getAllOnce()
         val inspections = db.inspectionResultDao().getAllOnce()
             .associateBy { "${it.unite}|${it.famille}|${it.item}|${it.rep}" }
-        ExcelNativeExporter(appContext).export(referenceExcelFile(), sheetName, brides, inspections)
+        ExcelNativeExporter(appContext).export(
+            referenceExcelFile(), sheetName, brides, inspections,
+            client = header?.client.orEmpty(), chantier = header?.lieu.orEmpty()
+        )
     }
 
     private fun referenceExcelFile(): File {
@@ -100,7 +104,11 @@ class Repository(private val appContext: Context) {
         return File(dir, "classeur_reference.xlsm")
     }
 
-    data class CatalogueEntry(val unite: String, val famille: String, val item: String, val complete: Boolean, val revision: Int = 0) {
+    data class CatalogueEntry(
+        val unite: String, val famille: String, val item: String, val complete: Boolean, val revision: Int = 0,
+        // true dès qu'un export PDF a déjà eu lieu pour cet item (peu importe la révision).
+        val exported: Boolean = false
+    ) {
         /** Libellé à afficher (filtres/catalogue/impression) : "$item" ou "$item-R$revision" si révisé. */
         val displayItem: String get() = itemDisplayLabel(item, revision)
     }
@@ -124,8 +132,10 @@ class Repository(private val appContext: Context) {
                 val insp = inspectionsByKey["${ic.unite}|${ic.famille}|${ic.item}|${b.rep}"]
                 insp != null && globalConformite(insp) != Conformite.EN_ATTENTE
             }
-            val revision = revisionsByItem[Triple(ic.unite, ic.famille, ic.item)]?.revision ?: 0
-            CatalogueEntry(ic.unite, ic.famille, ic.item, complete, revision)
+            val itemRevision = revisionsByItem[Triple(ic.unite, ic.famille, ic.item)]
+            val revision = itemRevision?.revision ?: 0
+            val exported = (itemRevision?.exportedRevision ?: -1) >= 0
+            CatalogueEntry(ic.unite, ic.famille, ic.item, complete, revision, exported)
         }
     }
 

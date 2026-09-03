@@ -659,19 +659,51 @@ class MainActivity : AppCompatActivity() {
 
         lifecycleScope.launch {
             val entries = repo.getCatalogueOverview()
+            // Filtres d'affichage (indépendants, cumulables) : chaque bouton bascule on/off en le
+            // retouchant, comme demandé — pas une sélection radio "tout ou rien".
+            var filtreComplets = false
+            var filtreNonExportes = false
+
+            fun filteredEntries(): List<Repository.CatalogueEntry> = entries.filter { entry ->
+                (!filtreComplets || entry.complete) && (!filtreNonExportes || !entry.exported)
+            }
+
+            fun setFiltreButtonState(button: android.widget.Button, actif: Boolean) {
+                if (actif) {
+                    button.setBackgroundColor(ContextCompat.getColor(this@MainActivity, R.color.primary))
+                    button.setTextColor(Color.WHITE)
+                } else {
+                    button.setBackgroundColor(Color.TRANSPARENT)
+                    button.setTextColor(ContextCompat.getColor(this@MainActivity, R.color.primary))
+                }
+            }
 
             fun render() {
-                buildPdfExportTable(dialogBinding.pdfExportTable, entries) { render() }
+                val visibles = filteredEntries()
+                buildPdfExportTable(dialogBinding.pdfExportTable, visibles) { render() }
                 dialogBinding.tvSelectionCount.text = getString(R.string.pdf_export_selection_count, pdfExportSelection.size)
+                setFiltreButtonState(dialogBinding.btnFiltreComplets, filtreComplets)
+                setFiltreButtonState(dialogBinding.btnFiltreNonExportes, filtreNonExportes)
+                // Le bouton bascule selon que tout ce qui est actuellement affiché (filtres appliqués) est déjà sélectionné ou non.
+                val visibleKeys = visibles.map { Triple(it.unite, it.famille, it.item) }
+                val toutSelectionne = visibleKeys.isNotEmpty() && visibleKeys.all { it in pdfExportSelection }
+                dialogBinding.btnToutSelectionner.text = getString(
+                    if (toutSelectionne) R.string.pdf_export_tout_deselectionner else R.string.pdf_export_tout_selectionner
+                )
             }
 
-            dialogBinding.btnToutSelectionner.setOnClickListener {
-                pdfExportSelection.clear()
-                entries.forEach { pdfExportSelection.add(Triple(it.unite, it.famille, it.item)) }
+            dialogBinding.btnFiltreComplets.setOnClickListener {
+                filtreComplets = !filtreComplets
                 render()
             }
-            dialogBinding.btnToutDeselectionner.setOnClickListener {
-                pdfExportSelection.clear()
+            dialogBinding.btnFiltreNonExportes.setOnClickListener {
+                filtreNonExportes = !filtreNonExportes
+                render()
+            }
+            dialogBinding.btnToutSelectionner.setOnClickListener {
+                val visibleKeys = filteredEntries().map { Triple(it.unite, it.famille, it.item) }
+                val toutSelectionne = visibleKeys.isNotEmpty() && visibleKeys.all { it in pdfExportSelection }
+                if (toutSelectionne) pdfExportSelection.removeAll(visibleKeys.toSet()) else pdfExportSelection.addAll(visibleKeys)
                 render()
             }
             dialogBinding.btnImprimer.setOnClickListener {
@@ -763,7 +795,8 @@ class MainActivity : AppCompatActivity() {
                         val key = Triple(entry.unite, entry.famille, entry.item)
                         val selectionne = key in pdfExportSelection
                         cell.addView(TextView(this@MainActivity).apply {
-                            text = entry.displayItem
+                            // "✓" = déjà exporté au moins une fois (voir Repository.CatalogueEntry.exported).
+                            text = entry.displayItem + if (entry.exported) getString(R.string.pdf_export_deja_exporte_suffixe) else ""
                             // Couleur du texte = complétude (comme la fenêtre Filtre) ; fond jaune = marqué pour l'impression.
                             setTextColor(if (entry.complete) ContextCompat.getColor(this@MainActivity, R.color.conforme) else Color.RED)
                             setTypeface(typeface, if (selectionne) android.graphics.Typeface.BOLD else android.graphics.Typeface.NORMAL)
@@ -782,7 +815,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    /** Génère séquentiellement un PDF par item de [selection] (dossier files/exports). */
+    /** Génère séquentiellement un PDF par item de [selection] (dossier "Client - Chantier - Année", voir ExportPaths). */
     private fun printSelectedItems(selection: List<Triple<String, String, String>>) {
         android.widget.Toast.makeText(this, R.string.pdf_export_en_cours, android.widget.Toast.LENGTH_SHORT).show()
         lifecycleScope.launch {

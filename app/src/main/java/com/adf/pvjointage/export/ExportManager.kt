@@ -38,8 +38,9 @@ import java.io.FileOutputStream
  *   nouveau fichier (l'export précédent n'est jamais modifié ni supprimé) et ne contient
  *   jamais une bride en double — une bride modifiée depuis le dernier export y apparaît une
  *   seule fois, marquée "RÉVISION n" ; une bride inchangée y apparaît telle quelle, sans mention.
- * Les fichiers sont écrits dans le dossier de l'application (files/exports) et
- * restent également disponibles hors-ligne (stockage local).
+ * Les fichiers sont écrits dans le dossier de l'application, sous
+ * files/exports/{Client} - {Chantier} - {Année} (voir [ExportPaths]), et restent également
+ * disponibles hors-ligne (stockage local).
  */
 class ExportManager(private val context: Context, private val repo: Repository) {
 
@@ -65,11 +66,9 @@ class ExportManager(private val context: Context, private val repo: Repository) 
         }
     }
 
-    private fun exportDir(): File {
-        val dir = File(context.getExternalFilesDir(null), "exports")
-        dir.mkdirs()
-        return dir
-    }
+    /** Dossier "{Client} - {Chantier} - {Année}" (voir [ExportPaths]) — repérable une fois sorti de l'appli. */
+    private fun exportDir(header: PvHeader?): File =
+        ExportPaths.resolveExportDir(context, header?.client.orEmpty(), header?.lieu.orEmpty())
 
     // ---------------------------------------------------------------------
     // PDF
@@ -88,7 +87,6 @@ class ExportManager(private val context: Context, private val repo: Repository) 
         // ce nouvel export documente cette révision ("ITEM-R1", etc.) — voir Repository.touchItemRevision.
         val itemRevisionState = repo.getItemRevisionOnce(unite, famille, item)
         val revision = itemRevisionState?.revision ?: 0
-        val itemLabel = itemDisplayLabel(item, revision)
 
         // État "de base" = instantané des contrôles au dernier export (vide si l'item n'a jamais
         // été exporté). Sert uniquement à détecter quelles brides ont changé depuis — pas à les
@@ -126,8 +124,10 @@ class ExportManager(private val context: Context, private val repo: Repository) 
             drawBrideDetailPage(doc, pageNumber, header, unite, famille, item, bride, currentInspections[bride.rep], bridePhotos, revisionLabel)
         }
 
-        val fileName = "PV_${itemLabel}_${System.currentTimeMillis()}.pdf"
-        val file = File(exportDir(), fileName)
+        // "PV - {item} - rev{n}" (révision 0 par défaut) : nom stable, sans horodatage — un nouvel
+        // export à révision inchangée remplace donc le précédent (même contenu, pas de doublon).
+        val fileName = "PV - ${ExportPaths.sanitize(item)} - rev$revision.pdf"
+        val file = File(exportDir(header), fileName)
         FileOutputStream(file).use { doc.writeTo(it) }
         doc.close()
 

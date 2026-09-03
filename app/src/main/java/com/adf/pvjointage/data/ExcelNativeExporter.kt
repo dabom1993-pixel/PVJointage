@@ -59,17 +59,18 @@ class ExcelNativeExporter(private val context: Context) {
         return raw.takeIf { it.isNotBlank() }
     }
 
-    private fun exportDir(): File {
-        val dir = File(context.getExternalFilesDir(null), "exports")
-        dir.mkdirs()
-        return dir
-    }
+    /** Dossier "{Client} - {Chantier} - {Année}" (voir [com.adf.pvjointage.export.ExportPaths]) — même convention que l'export PDF. */
+    private fun exportDir(client: String, chantier: String): File =
+        com.adf.pvjointage.export.ExportPaths.resolveExportDir(context, client, chantier)
 
     /**
      * [brides] : catalogue complet (tous items). [inspections] : résultats indexés par
      * "unite|famille|item|rep". Retourne le chemin du fichier .xlsm généré.
      */
-    fun export(referenceFile: File, sheetName: String, brides: List<BrideCatalog>, inspections: Map<String, InspectionResult>): String {
+    fun export(
+        referenceFile: File, sheetName: String, brides: List<BrideCatalog>, inspections: Map<String, InspectionResult>,
+        client: String, chantier: String
+    ): String {
         if (!referenceFile.exists()) {
             throw NativeExportException("Aucun fichier Excel de référence : importez d'abord un fichier via \"Importer\".")
         }
@@ -89,7 +90,7 @@ class ExcelNativeExporter(private val context: Context) {
         val updatedSheetXml = updateSheetXml(originalSheetXml, sharedStrings, inspections)
 
         val fileName = "PV_Jointage_${System.currentTimeMillis()}.xlsm"
-        val outFile = File(exportDir(), fileName)
+        val outFile = File(exportDir(client, chantier), fileName)
         rewriteZipReplacingEntry(referenceFile, sheetPath, updatedSheetXml, outFile)
         return outFile.absolutePath
     }
