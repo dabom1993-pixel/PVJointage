@@ -795,8 +795,7 @@ class MainActivity : AppCompatActivity() {
                         val key = Triple(entry.unite, entry.famille, entry.item)
                         val selectionne = key in pdfExportSelection
                         cell.addView(TextView(this@MainActivity).apply {
-                            // "✓" = déjà exporté au moins une fois (voir Repository.CatalogueEntry.exported).
-                            text = entry.displayItem + if (entry.exported) getString(R.string.pdf_export_deja_exporte_suffixe) else ""
+                            text = entry.displayItem
                             // Couleur du texte = complétude (comme la fenêtre Filtre) ; fond jaune = marqué pour l'impression.
                             setTextColor(if (entry.complete) ContextCompat.getColor(this@MainActivity, R.color.conforme) else Color.RED)
                             setTypeface(typeface, if (selectionne) android.graphics.Typeface.BOLD else android.graphics.Typeface.NORMAL)
