@@ -503,7 +503,9 @@ class MainActivity : AppCompatActivity() {
                             setPadding(6, 4, 6, 4)
                             setOnClickListener {
                                 val latest = pdfFilesByItem[entry.item]?.maxByOrNull { it.lastModified() }
-                                if (latest != null) showPdfViewer(latest, entry.displayItem)
+                                // Nom du fichier réellement exporté (ex. "PV - ITEM - rev1.pdf"), pas le libellé de
+                                // révision en cours : l'item peut avoir avancé en révision depuis ce dernier export.
+                                if (latest != null) showPdfViewer(latest, latest.name)
                             }
                         })
                     }
