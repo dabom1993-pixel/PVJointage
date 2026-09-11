@@ -33,10 +33,12 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import coil.load
 import com.adf.pvjointage.PvApp
 import com.adf.pvjointage.R
+import com.adf.pvjointage.data.BrideCatalog
 import com.adf.pvjointage.data.ExcelImporter
 import com.adf.pvjointage.data.PvHeader
 import com.adf.pvjointage.data.Repository
 import com.adf.pvjointage.databinding.ActivityMainBinding
+import com.adf.pvjointage.databinding.DialogAjouterBrideBinding
 import com.adf.pvjointage.databinding.DialogCatalogueBinding
 import com.adf.pvjointage.databinding.DialogPdfExportBinding
 import com.adf.pvjointage.databinding.DialogPdfViewerBinding
@@ -46,6 +48,7 @@ import com.adf.pvjointage.export.ExportManager
 import com.adf.pvjointage.update.UpdateManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -136,6 +139,7 @@ class MainActivity : AppCompatActivity() {
 
         binding.btnCatalogue.setOnClickListener { showCatalogueDialog() }
         binding.cardLogo.setOnClickListener { onUpdateButtonClicked() }
+        binding.btnAjouterBride.setOnClickListener { showAjouterBrideDialog() }
 
         observeBridesAndInspections()
         observeItemRevision()
@@ -332,6 +336,62 @@ class MainActivity : AppCompatActivity() {
         }
         dialogBinding.btnFermerZoom.setOnClickListener { dialog.dismiss() }
         dialog.show()
+    }
+
+    /**
+     * Fenêtre "+ Ajouter une bride" : pour un équipement/repère qui ne figurait pas dans l'Excel
+     * importé. Seul le Repère est obligatoire (doit être unique pour l'item courant) ; les autres
+     * champs de référence peuvent rester vides et être complétés plus tard.
+     */
+    private fun showAjouterBrideDialog() {
+        if (selectedUnite.isBlank() || selectedFamille.isBlank() || selectedItem.isBlank()) {
+            android.widget.Toast.makeText(this, R.string.ajouter_bride_item_requis, android.widget.Toast.LENGTH_LONG).show()
+            return
+        }
+        val dialogBinding = DialogAjouterBrideBinding.inflate(layoutInflater)
+        val dialog = AlertDialog.Builder(this)
+            .setTitle(R.string.ajouter_bride_titre)
+            .setView(dialogBinding.root)
+            .setPositiveButton(R.string.btn_ajouter, null)
+            .setNegativeButton(R.string.btn_annuler, null)
+            .show()
+
+        // setOnClickListener (plutôt que le listener du setPositiveButton) : permet de garder la
+        // fenêtre ouverte et d'afficher une erreur si la saisie n'est pas valide, au lieu de la
+        // fermer systématiquement au clic.
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+            val rep = dialogBinding.etRepere.text.toString().trim()
+            if (rep.isEmpty()) {
+                dialogBinding.etRepere.error = getString(R.string.ajouter_bride_repere_requis)
+                return@setOnClickListener
+            }
+            lifecycleScope.launch {
+                val existants = repo.getBrides(selectedUnite, selectedFamille, selectedItem).first()
+                if (existants.any { it.rep.equals(rep, ignoreCase = true) }) {
+                    dialogBinding.etRepere.error = getString(R.string.ajouter_bride_repere_existe)
+                    return@launch
+                }
+                val bride = BrideCatalog(
+                    unite = selectedUnite, famille = selectedFamille, item = selectedItem, rep = rep,
+                    designation = dialogBinding.etDesignation.text.toString().trim(),
+                    dn = dialogBinding.etDn.text.toString().trim(),
+                    pn = dialogBinding.etPn.text.toString().trim(),
+                    matiereJoint = dialogBinding.etMatiereJoint.text.toString().trim(),
+                    rondelle = dialogBinding.etRondelle.text.toString().trim(),
+                    matiereBoulon = dialogBinding.etMatiereBoulon.text.toString().trim(),
+                    longueurBoulon = dialogBinding.etLongueurBoulon.text.toString().trim(),
+                    diametreBoulon = dialogBinding.etDiametreBoulon.text.toString().trim(),
+                    neufBoulon = dialogBinding.etNeufBoulon.text.toString().trim()
+                )
+                try {
+                    repo.addBride(bride)
+                    android.widget.Toast.makeText(this@MainActivity, getString(R.string.ajouter_bride_succes, rep), android.widget.Toast.LENGTH_SHORT).show()
+                    dialog.dismiss()
+                } catch (e: Exception) {
+                    android.widget.Toast.makeText(this@MainActivity, getString(R.string.ajouter_bride_erreur, e.message ?: ""), android.widget.Toast.LENGTH_LONG).show()
+                }
+            }
+        }
     }
 
     private enum class CatalogueFilter { TOUS, COMPLETS, INCOMPLETS }

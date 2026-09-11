@@ -32,6 +32,26 @@
     <string name="col_assemblage">Assemblage</string>
     <string name="col_conforme">Conforme</string>
 
+    <string name="btn_ajouter_bride">+ Ajouter une bride</string>
+    <string name="ajouter_bride_titre">Ajouter une bride</string>
+    <string name="ajouter_bride_repere_hint">Repère * (ex. k)</string>
+    <string name="ajouter_bride_designation_hint">Désignation</string>
+    <string name="ajouter_bride_dn_hint">DN</string>
+    <string name="ajouter_bride_pn_hint">PN</string>
+    <string name="ajouter_bride_matiere_joint_hint">Matière joint</string>
+    <string name="ajouter_bride_rondelle_hint">Rondelle</string>
+    <string name="ajouter_bride_matiere_boulon_hint">Matière boulonnerie</string>
+    <string name="ajouter_bride_longueur_hint">Longueur boulon</string>
+    <string name="ajouter_bride_diametre_hint">Diamètre boulon</string>
+    <string name="ajouter_bride_neuf_hint">Boulonnerie neuve (Oui/Non)</string>
+    <string name="ajouter_bride_item_requis">Sélectionnez d\'abord un item.</string>
+    <string name="ajouter_bride_repere_requis">Le repère est obligatoire.</string>
+    <string name="ajouter_bride_repere_existe">Ce repère existe déjà pour cet item.</string>
+    <string name="ajouter_bride_succes">Bride « %1$s » ajoutée.</string>
+    <string name="ajouter_bride_erreur">Erreur lors de l\'ajout : %1$s</string>
+    <string name="btn_ajouter">Ajouter</string>
+    <string name="btn_annuler">Annuler</string>
+
     <!-- B-Champ -->
     <string name="titre_serrage">PV DE SERRAGE CONTRÔLE</string>
     <string name="localisation">LOCALISATION</string>

@@ -157,6 +157,17 @@ class Repository(private val appContext: Context) {
     fun getBrides(unite: String, famille: String, item: String): Flow<List<BrideCatalog>> =
         db.brideCatalogDao().getBrides(unite, famille, item)
 
+    /**
+     * Ajout manuel d'une bride (bouton "+ Ajouter une bride"), pour un équipement qui ne figurait
+     * pas dans l'Excel importé. Lève une exception si le repère existe déjà pour cet item
+     * (contrainte d'unicité unite+famille+item+rep).
+     */
+    suspend fun addBride(bride: BrideCatalog) {
+        db.brideCatalogDao().insert(bride)
+        touchDate()
+        touchItemRevision(bride.unite, bride.famille, bride.item)
+    }
+
     // En-tête PV
     fun getHeader(): Flow<PvHeader?> = db.pvHeaderDao().getHeader()
 

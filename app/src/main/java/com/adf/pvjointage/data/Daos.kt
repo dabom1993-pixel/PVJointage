@@ -38,6 +38,10 @@ interface BrideCatalogDao {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertAll(brides: List<BrideCatalog>)
 
+    /** Ajout manuel d'une seule bride (bouton "+ Ajouter une bride") : échoue si le repère existe déjà pour cet item. */
+    @Insert(onConflict = OnConflictStrategy.ABORT)
+    suspend fun insert(bride: BrideCatalog): Long
+
     @Query("DELETE FROM bride_catalog")
     suspend fun deleteAll()
 
