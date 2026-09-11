@@ -338,10 +338,30 @@ class MainActivity : AppCompatActivity() {
         dialog.show()
     }
 
+    // Premier élément = "non renseigné" (placeholder), pas une vraie valeur.
+    private val dnValeurs = listOf("DN") +
+        listOf(15, 20, 25, 32, 40, 50, 65, 80, 100, 125, 150).map { it.toString() } +
+        (200..2000 step 50).map { it.toString() }
+    private val pnValeurs = listOf("PN") + listOf(6, 10, 20, 25, 40, 50, 68, 100, 150, 250, 420).map { it.toString() }
+    private val rondelleValeurs = listOf("Rondelle", "Oui", "Non")
+    private val longueurBoulonValeurs = listOf("Lg (mm)") + (60..350 step 10).map { it.toString() }
+    private val diametreBoulonValeurs = listOf("Diam (mm)") + listOf(14, 16, 20, 22, 24, 27, 30, 33, 36, 39, 42, 48).map { it.toString() }
+    private val neufBoulonValeurs = listOf("Boulonnerie neuve", "Oui", "Non")
+
+    private fun spinnerSetup(spinner: android.widget.Spinner, values: List<String>) {
+        val adapterSp = ArrayAdapter(this, android.R.layout.simple_spinner_item, values)
+        adapterSp.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        spinner.adapter = adapterSp
+    }
+
+    /** Valeur choisie, ou "" si le placeholder (1er élément, "non renseigné") est resté sélectionné. */
+    private fun spinnerValue(spinner: android.widget.Spinner): String =
+        if (spinner.selectedItemPosition <= 0) "" else spinner.selectedItem as String
+
     /**
      * Fenêtre "+ Ajouter une bride" : pour un équipement/repère qui ne figurait pas dans l'Excel
-     * importé. Seul le Repère est obligatoire (doit être unique pour l'item courant) ; les autres
-     * champs de référence peuvent rester vides et être complétés plus tard.
+     * importé. Seul le Repère est obligatoire (doit être unique pour l'item courant, vérifié en
+     * direct pendant la saisie) ; les autres champs de référence peuvent rester vides.
      */
     private fun showAjouterBrideDialog() {
         if (selectedUnite.isBlank() || selectedFamille.isBlank() || selectedItem.isBlank()) {
@@ -349,46 +369,73 @@ class MainActivity : AppCompatActivity() {
             return
         }
         val dialogBinding = DialogAjouterBrideBinding.inflate(layoutInflater)
+        spinnerSetup(dialogBinding.spDn, dnValeurs)
+        spinnerSetup(dialogBinding.spPn, pnValeurs)
+        spinnerSetup(dialogBinding.spRondelle, rondelleValeurs)
+        spinnerSetup(dialogBinding.spLongueurBoulon, longueurBoulonValeurs)
+        spinnerSetup(dialogBinding.spDiametreBoulon, diametreBoulonValeurs)
+        spinnerSetup(dialogBinding.spNeufBoulon, neufBoulonValeurs)
+
         val dialog = AlertDialog.Builder(this)
             .setTitle(R.string.ajouter_bride_titre)
             .setView(dialogBinding.root)
-            .setPositiveButton(R.string.btn_ajouter, null)
+            .setPositiveButton(R.string.btn_enregistrer, null)
             .setNegativeButton(R.string.btn_annuler, null)
             .show()
 
-        // setOnClickListener (plutôt que le listener du setPositiveButton) : permet de garder la
-        // fenêtre ouverte et d'afficher une erreur si la saisie n'est pas valide, au lieu de la
-        // fermer systématiquement au clic.
-        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
-            val rep = dialogBinding.etRepere.text.toString().trim()
-            if (rep.isEmpty()) {
-                dialogBinding.etRepere.error = getString(R.string.ajouter_bride_repere_requis)
-                return@setOnClickListener
+        lifecycleScope.launch {
+            // Repères existants de l'item courant, chargés une fois à l'ouverture : vérification du
+            // doublon en direct pendant la saisie, sans requête base à chaque caractère tapé.
+            val repsExistants = repo.getBrides(selectedUnite, selectedFamille, selectedItem).first()
+                .map { it.rep.trim().lowercase() }.toSet()
+
+            fun repereEnDoublon(): Boolean = dialogBinding.etRepere.text.toString().trim().lowercase() in repsExistants
+
+            fun rafraichirEtatRepere() {
+                val doublon = repereEnDoublon()
+                dialogBinding.etRepere.setTextColor(
+                    ContextCompat.getColor(this@MainActivity, if (doublon) R.color.non_conforme else R.color.black)
+                )
+                dialogBinding.tvRepereDoublon.visibility = if (doublon) View.VISIBLE else View.GONE
             }
-            lifecycleScope.launch {
-                val existants = repo.getBrides(selectedUnite, selectedFamille, selectedItem).first()
-                if (existants.any { it.rep.equals(rep, ignoreCase = true) }) {
-                    dialogBinding.etRepere.error = getString(R.string.ajouter_bride_repere_existe)
-                    return@launch
+            dialogBinding.etRepere.addTextChangedListener(object : android.text.TextWatcher {
+                override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+                override fun afterTextChanged(s: android.text.Editable?) { rafraichirEtatRepere() }
+            })
+
+            // setOnClickListener (plutôt que le listener du setPositiveButton) : permet de garder la
+            // fenêtre ouverte et de signaler une erreur au lieu de la fermer systématiquement au clic.
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                val rep = dialogBinding.etRepere.text.toString().trim()
+                if (rep.isEmpty()) {
+                    dialogBinding.etRepere.error = getString(R.string.ajouter_bride_repere_requis)
+                    return@setOnClickListener
+                }
+                if (repereEnDoublon()) {
+                    rafraichirEtatRepere()
+                    return@setOnClickListener
                 }
                 val bride = BrideCatalog(
                     unite = selectedUnite, famille = selectedFamille, item = selectedItem, rep = rep,
                     designation = dialogBinding.etDesignation.text.toString().trim(),
-                    dn = dialogBinding.etDn.text.toString().trim(),
-                    pn = dialogBinding.etPn.text.toString().trim(),
+                    dn = spinnerValue(dialogBinding.spDn),
+                    pn = spinnerValue(dialogBinding.spPn),
                     matiereJoint = dialogBinding.etMatiereJoint.text.toString().trim(),
-                    rondelle = dialogBinding.etRondelle.text.toString().trim(),
+                    rondelle = spinnerValue(dialogBinding.spRondelle),
                     matiereBoulon = dialogBinding.etMatiereBoulon.text.toString().trim(),
-                    longueurBoulon = dialogBinding.etLongueurBoulon.text.toString().trim(),
-                    diametreBoulon = dialogBinding.etDiametreBoulon.text.toString().trim(),
-                    neufBoulon = dialogBinding.etNeufBoulon.text.toString().trim()
+                    longueurBoulon = spinnerValue(dialogBinding.spLongueurBoulon),
+                    diametreBoulon = spinnerValue(dialogBinding.spDiametreBoulon),
+                    neufBoulon = spinnerValue(dialogBinding.spNeufBoulon)
                 )
-                try {
-                    repo.addBride(bride)
-                    android.widget.Toast.makeText(this@MainActivity, getString(R.string.ajouter_bride_succes, rep), android.widget.Toast.LENGTH_SHORT).show()
-                    dialog.dismiss()
-                } catch (e: Exception) {
-                    android.widget.Toast.makeText(this@MainActivity, getString(R.string.ajouter_bride_erreur, e.message ?: ""), android.widget.Toast.LENGTH_LONG).show()
+                lifecycleScope.launch {
+                    try {
+                        repo.addBride(bride)
+                        android.widget.Toast.makeText(this@MainActivity, getString(R.string.ajouter_bride_succes, rep), android.widget.Toast.LENGTH_SHORT).show()
+                        dialog.dismiss()
+                    } catch (e: Exception) {
+                        android.widget.Toast.makeText(this@MainActivity, getString(R.string.ajouter_bride_erreur, e.message ?: ""), android.widget.Toast.LENGTH_LONG).show()
+                    }
                 }
             }
         }

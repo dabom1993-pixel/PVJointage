@@ -9,8 +9,18 @@
         android:orientation="vertical"
         android:paddingStart="20dp"
         android:paddingEnd="20dp"
-        android:paddingTop="8dp"
+        android:paddingTop="4dp"
         android:paddingBottom="8dp">
+
+        <!-- BRIDE -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/ajouter_bride_section_bride"
+            android:textColor="@color/primary"
+            android:textStyle="bold"
+            android:textSize="15sp"
+            android:layout_marginBottom="6dp" />
 
         <EditText
             android:id="@+id/etRepere"
@@ -18,7 +28,17 @@
             android:layout_height="wrap_content"
             android:hint="@string/ajouter_bride_repere_hint"
             android:inputType="text"
-            android:layout_marginBottom="10dp" />
+            android:layout_marginBottom="2dp" />
+
+        <TextView
+            android:id="@+id/tvRepereDoublon"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/ajouter_bride_repere_existe"
+            android:textColor="@color/non_conforme"
+            android:textSize="11sp"
+            android:visibility="gone"
+            android:layout_marginBottom="8dp" />
 
         <EditText
             android:id="@+id/etDesignation"
@@ -28,28 +48,34 @@
             android:inputType="textCapSentences"
             android:layout_marginBottom="10dp" />
 
+        <!-- JOINT -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/section_joint"
+            android:textColor="@color/primary"
+            android:textStyle="bold"
+            android:textSize="15sp"
+            android:layout_marginBottom="6dp" />
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:layout_marginBottom="10dp">
 
-            <EditText
-                android:id="@+id/etDn"
+            <Spinner
+                android:id="@+id/spDn"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:hint="@string/ajouter_bride_dn_hint"
-                android:inputType="text"
                 android:layout_marginEnd="6dp" />
 
-            <EditText
-                android:id="@+id/etPn"
+            <Spinner
+                android:id="@+id/spPn"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:hint="@string/ajouter_bride_pn_hint"
-                android:inputType="text"
                 android:layout_marginStart="6dp" />
         </LinearLayout>
 
@@ -61,20 +87,20 @@
             android:inputType="text"
             android:layout_marginBottom="10dp" />
 
-        <EditText
-            android:id="@+id/etRondelle"
+        <!-- BOULONNERIE -->
+        <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="@string/ajouter_bride_rondelle_hint"
-            android:inputType="text"
-            android:layout_marginBottom="10dp" />
+            android:text="@string/section_boulonnerie"
+            android:textColor="@color/primary"
+            android:textStyle="bold"
+            android:textSize="15sp"
+            android:layout_marginBottom="6dp" />
 
-        <EditText
-            android:id="@+id/etMatiereBoulon"
+        <Spinner
+            android:id="@+id/spRondelle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="@string/ajouter_bride_matiere_boulon_hint"
-            android:inputType="text"
             android:layout_marginBottom="10dp" />
 
         <LinearLayout
@@ -83,30 +109,32 @@
             android:orientation="horizontal"
             android:layout_marginBottom="10dp">
 
-            <EditText
-                android:id="@+id/etLongueurBoulon"
+            <Spinner
+                android:id="@+id/spLongueurBoulon"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:hint="@string/ajouter_bride_longueur_hint"
-                android:inputType="text"
                 android:layout_marginEnd="6dp" />
 
-            <EditText
-                android:id="@+id/etDiametreBoulon"
+            <Spinner
+                android:id="@+id/spDiametreBoulon"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:hint="@string/ajouter_bride_diametre_hint"
-                android:inputType="text"
                 android:layout_marginStart="6dp" />
         </LinearLayout>
 
-        <EditText
-            android:id="@+id/etNeufBoulon"
+        <Spinner
+            android:id="@+id/spNeufBoulon"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="@string/ajouter_bride_neuf_hint"
+            android:layout_marginBottom="10dp" />
+
+        <EditText
+            android:id="@+id/etMatiereBoulon"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/ajouter_bride_matiere_boulon_hint"
             android:inputType="text" />
 
     </LinearLayout>
