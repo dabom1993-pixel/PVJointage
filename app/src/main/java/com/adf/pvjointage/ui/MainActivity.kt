@@ -52,6 +52,12 @@ import java.io.File
 
 class MainActivity : AppCompatActivity() {
 
+    companion object {
+        // Une seule vérification automatique par lancement de l'appli (et non à chaque
+        // recréation de l'Activity, ex. rotation d'écran) : partagé entre toutes les instances.
+        private var startupUpdateCheckDone = false
+    }
+
     private lateinit var binding: ActivityMainBinding
     private val repo by lazy { (application as PvApp).repository }
     private val adapter = BrideAdapter { bride ->
@@ -133,6 +139,7 @@ class MainActivity : AppCompatActivity() {
 
         observeBridesAndInspections()
         observeItemRevision()
+        checkForUpdateOnStartup()
     }
 
     private fun saveHeader() {
@@ -917,7 +924,47 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // --- Mise à jour de l'application (bouton logo) ---------------------------------------
+    // --- Mise à jour de l'application (bouton logo + vérification automatique) ------------
+
+    /** Wifi connecté ou données mobiles (carte SIM) actives, avec un accès Internet réel. */
+    private fun hasUsableNetwork(): Boolean {
+        val cm = getSystemService(android.content.Context.CONNECTIVITY_SERVICE) as? android.net.ConnectivityManager ?: return false
+        val network = cm.activeNetwork ?: return false
+        val caps = cm.getNetworkCapabilities(network) ?: return false
+        val transportOk = caps.hasTransport(android.net.NetworkCapabilities.TRANSPORT_WIFI) ||
+            caps.hasTransport(android.net.NetworkCapabilities.TRANSPORT_CELLULAR)
+        return transportOk && caps.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET)
+    }
+
+    /**
+     * Vérification automatique au lancement de l'appli : uniquement si la tablette a une
+     * connexion utilisable (Wifi ou données mobiles/carte SIM) — sinon on ne fait rien (l'appli
+     * doit rester pleinement utilisable hors connexion, sans erreur ni blocage).
+     * Silencieuse s'il n'y a pas de mise à jour disponible ; sinon, reprend exactement le même
+     * flux que le bouton logo (téléchargement, message de confirmation, puis installation).
+     */
+    private fun checkForUpdateOnStartup() {
+        if (startupUpdateCheckDone) return
+        startupUpdateCheckDone = true
+        if (!hasUsableNetwork()) return
+        if (updateCheckInProgress) return
+        updateCheckInProgress = true
+        lifecycleScope.launch {
+            val info = try {
+                UpdateManager.fetchLatestUpdateInfo()
+            } catch (e: Exception) {
+                // Vérification silencieuse : une erreur réseau ponctuelle ne doit pas interrompre
+                // l'utilisateur au lancement (il peut toujours réessayer via le bouton logo).
+                updateCheckInProgress = false
+                return@launch
+            }
+            if (info != null && UpdateManager.hasUpdate(this@MainActivity, info)) {
+                downloadAndInstallUpdate(info)
+            } else {
+                updateCheckInProgress = false
+            }
+        }
+    }
 
     /** Recherche une mise à jour ; navigue vers "pas de mise à jour" ou le téléchargement. */
     private fun onUpdateButtonClicked() {

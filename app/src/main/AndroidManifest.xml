@@ -5,6 +5,9 @@
     <uses-feature android:name="android.hardware.camera" android:required="false" />
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Sert uniquement à détecter une connexion Wifi/données mobiles utilisable avant de
+         vérifier automatiquement une mise à jour au lancement (aucune donnée de localisation). -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <!-- Nécessaire pour que l'app puisse installer elle-même l'APK de mise à jour
          (bouton logo, écran principal) sans passer par le Play Store. -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
