@@ -110,14 +110,14 @@
             android:layout_marginBottom="10dp">
 
             <Spinner
-                android:id="@+id/spLongueurBoulon"
+                android:id="@+id/spDiametreBoulon"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:layout_marginEnd="6dp" />
 
             <Spinner
-                android:id="@+id/spDiametreBoulon"
+                android:id="@+id/spLongueurBoulon"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
