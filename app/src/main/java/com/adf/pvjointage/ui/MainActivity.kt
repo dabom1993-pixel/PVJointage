@@ -558,27 +558,30 @@ class MainActivity : AppCompatActivity() {
 
     // --- Fenêtre Filtre, moitié droite : exports PDF présents sur la tablette ------------------
 
-    /** Dossier des PDF générés (voir ExportManager.exportDir) : uniquement les ".pdf", jamais les ".xlsm" de l'export Excel. */
+    /**
+     * PDF générés (voir [com.adf.pvjointage.export.ExportPaths]) : désormais rangés dans un
+     * sous-dossier "{Client} - {Chantier} - {Année}" sous exports/, d'où le parcours récursif
+     * (un simple listFiles() du dossier exports/ lui-même ne les trouverait plus). Uniquement
+     * les ".pdf", jamais les ".xlsm" de l'export Excel.
+     */
     private fun exportedPdfFiles(): List<File> =
         File(getExternalFilesDir(null), "exports")
-            .listFiles { f -> f.isFile && f.extension.equals("pdf", ignoreCase = true) }
-            ?.toList().orEmpty()
+            .walkTopDown()
+            .filter { it.isFile && it.extension.equals("pdf", ignoreCase = true) }
+            .toList()
 
-    private val revisionSuffixRegex = Regex("-R\\d+$")
+    private val revSuffixRegex = Regex(" - rev\\d+$")
 
     /**
-     * Retrouve le code ITEM à partir du nom de fichier "PV_<item ou item-Rn>_<timestamp>.pdf"
-     * (voir ExportManager.exportPdf). Le timestamp est toujours le dernier segment "_" (des
-     * chiffres) : `substringBeforeLast('_')` reste donc correct même si le code ITEM contient
-     * lui-même des "_". Le suffixe "-Rn" éventuel est retiré pour retrouver l'item de base.
+     * Retrouve le code ITEM à partir du nom de fichier "PV - <item> - rev<n>.pdf"
+     * (voir ExportManager.exportPdf / ExportPaths.sanitize).
      */
     private fun itemCoreFromPdfFileName(file: File): String? {
         val name = file.nameWithoutExtension
-        if (!name.startsWith("PV_")) return null
-        val withoutPrefix = name.removePrefix("PV_")
-        val withoutTimestamp = withoutPrefix.substringBeforeLast('_', "")
-        if (withoutTimestamp.isEmpty()) return null
-        return withoutTimestamp.replace(revisionSuffixRegex, "")
+        if (!name.startsWith("PV - ")) return null
+        val withoutPrefix = name.removePrefix("PV - ")
+        val withoutRev = withoutPrefix.replace(revSuffixRegex, "")
+        return withoutRev.ifBlank { null }
     }
 
     /**
