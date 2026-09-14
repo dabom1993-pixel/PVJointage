@@ -86,7 +86,10 @@
     <string name="import_confirm_titre">Importer de nouvelles données</string>
     <string name="import_confirm_message">Êtes-vous sûr de vouloir importer de nouvelles données,\ncela va écraser le fichier existant ?</string>
     <string name="import_choisir_onglet_titre">Quel onglet utiliser pour l\'import ?</string>
-    <string name="import_choisir_dossier_schemas">Sélectionnez maintenant le dossier contenant les images des schémas (un fichier par ITEM)</string>
+    <string name="import_dossier_schemas_titre">Dossier de schémas</string>
+    <string name="import_dossier_schemas_message">Voulez-vous aussi importer un dossier contenant les images des schémas (un fichier par ITEM) ? Vous pourrez toujours le faire plus tard via un nouvel import.</string>
+    <string name="import_dossier_schemas_choisir">Choisir un dossier</string>
+    <string name="import_dossier_schemas_ignorer">Ignorer</string>
     <string name="import_en_cours">Import en cours…</string>
     <string name="import_succes">Import terminé : %1$d brides importées</string>
     <string name="import_succes_avec_schemas">Import terminé : %1$d brides, %2$d schémas importés</string>

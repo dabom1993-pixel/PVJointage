@@ -998,8 +998,7 @@ class MainActivity : AppCompatActivity() {
                         workbookClosed = true
                         pendingWorkbook = workbook
                         pendingSheetName = sheets[which]
-                        android.widget.Toast.makeText(this@MainActivity, R.string.import_choisir_dossier_schemas, android.widget.Toast.LENGTH_LONG).show()
-                        pickSchemasFolder.launch(null)
+                        askForSchemasFolder()
                     }
                     .setOnCancelListener { if (!workbookClosed) workbook.close() }
                     .show()
@@ -1007,6 +1006,28 @@ class MainActivity : AppCompatActivity() {
                 android.widget.Toast.makeText(this@MainActivity, getString(R.string.import_erreur, e.message ?: ""), android.widget.Toast.LENGTH_LONG).show()
             }
         }
+    }
+
+    /**
+     * Demande si l'utilisateur veut aussi choisir un dossier de schémas, ou passer cette étape
+     * (import du seul catalogue de brides, sans plans). "Choisir un dossier" ouvre le sélecteur
+     * système ; "Ignorer" ou la fermeture de la fenêtre lancent directement l'import sans dossier.
+     */
+    private fun askForSchemasFolder() {
+        fun importerSansSchemas() {
+            val workbook = pendingWorkbook
+            val sheetName = pendingSheetName
+            pendingWorkbook = null
+            pendingSheetName = null
+            if (workbook != null && sheetName != null) importFromExcel(workbook, sheetName, null)
+        }
+        AlertDialog.Builder(this)
+            .setTitle(R.string.import_dossier_schemas_titre)
+            .setMessage(R.string.import_dossier_schemas_message)
+            .setPositiveButton(R.string.import_dossier_schemas_choisir) { _, _ -> pickSchemasFolder.launch(null) }
+            .setNegativeButton(R.string.import_dossier_schemas_ignorer) { _, _ -> importerSansSchemas() }
+            .setOnCancelListener { importerSansSchemas() }
+            .show()
     }
 
     /**
