@@ -338,25 +338,37 @@ class MainActivity : AppCompatActivity() {
         dialog.show()
     }
 
-    // Premier élément = "non renseigné" (placeholder), pas une vraie valeur.
-    private val dnValeurs = listOf("DN") +
-        listOf(15, 20, 25, 32, 40, 50, 65, 80, 100, 125, 150).map { it.toString() } +
-        (200..2000 step 50).map { it.toString() }
-    private val pnValeurs = listOf("PN") + listOf(6, 10, 20, 25, 40, 50, 68, 100, 150, 250, 420).map { it.toString() }
-    private val rondelleValeurs = listOf("Rondelle", "Oui", "Non")
-    private val longueurBoulonValeurs = listOf("Lg (mm)") + (60..350 step 10).map { it.toString() }
-    private val diametreBoulonValeurs = listOf("Diam (mm)") + listOf(14, 16, 20, 22, 24, 27, 30, 33, 36, 39, 42, 48).map { it.toString() }
-    private val neufBoulonValeurs = listOf("Boulonnerie neuve", "Oui", "Non")
+    /**
+     * [label] reste affiché même une fois une valeur choisie (ex. "DN - 15", pas juste "15").
+     * [rawValues] : valeurs réellement stockées, dans le même ordre que leur affichage "label - valeur".
+     */
+    private data class SpinnerOptions(val label: String, val rawValues: List<String>) {
+        val displayValues: List<String> get() = listOf(label) + rawValues.map { "$label - $it" }
+    }
 
-    private fun spinnerSetup(spinner: android.widget.Spinner, values: List<String>) {
-        val adapterSp = ArrayAdapter(this, android.R.layout.simple_spinner_item, values)
+    private val dnOptions = SpinnerOptions(
+        "DN",
+        listOf(15, 20, 25, 32, 40, 50, 65, 80, 100, 125, 150).map { it.toString() } + (200..2000 step 50).map { it.toString() }
+    )
+    private val pnOptions = SpinnerOptions("PN", listOf(6, 10, 20, 25, 40, 50, 68, 100, 150, 250, 420).map { it.toString() })
+    private val rondelleOptions = SpinnerOptions("Rondelle", listOf("Oui", "Non"))
+    private val longueurBoulonOptions = SpinnerOptions("Lg (mm)", (60..350 step 10).map { it.toString() })
+    private val diametreBoulonOptions = SpinnerOptions("Diam (mm)", listOf(14, 16, 20, 22, 24, 27, 30, 33, 36, 39, 42, 48).map { it.toString() })
+    private val neufBoulonOptions = SpinnerOptions("Boulonnerie neuve", listOf("Oui", "Non"))
+
+    private fun spinnerSetup(spinner: android.widget.Spinner, options: SpinnerOptions) {
+        val adapterSp = ArrayAdapter(this, android.R.layout.simple_spinner_item, options.displayValues)
         adapterSp.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         spinner.adapter = adapterSp
+        spinner.tag = options
     }
 
     /** Valeur choisie, ou "" si le placeholder (1er élément, "non renseigné") est resté sélectionné. */
-    private fun spinnerValue(spinner: android.widget.Spinner): String =
-        if (spinner.selectedItemPosition <= 0) "" else spinner.selectedItem as String
+    private fun spinnerValue(spinner: android.widget.Spinner): String {
+        val options = spinner.tag as? SpinnerOptions ?: return ""
+        val position = spinner.selectedItemPosition
+        return if (position <= 0) "" else options.rawValues.getOrNull(position - 1).orEmpty()
+    }
 
     /**
      * Fenêtre "+ Ajouter une bride" : pour un équipement/repère qui ne figurait pas dans l'Excel
@@ -369,12 +381,12 @@ class MainActivity : AppCompatActivity() {
             return
         }
         val dialogBinding = DialogAjouterBrideBinding.inflate(layoutInflater)
-        spinnerSetup(dialogBinding.spDn, dnValeurs)
-        spinnerSetup(dialogBinding.spPn, pnValeurs)
-        spinnerSetup(dialogBinding.spRondelle, rondelleValeurs)
-        spinnerSetup(dialogBinding.spLongueurBoulon, longueurBoulonValeurs)
-        spinnerSetup(dialogBinding.spDiametreBoulon, diametreBoulonValeurs)
-        spinnerSetup(dialogBinding.spNeufBoulon, neufBoulonValeurs)
+        spinnerSetup(dialogBinding.spDn, dnOptions)
+        spinnerSetup(dialogBinding.spPn, pnOptions)
+        spinnerSetup(dialogBinding.spRondelle, rondelleOptions)
+        spinnerSetup(dialogBinding.spLongueurBoulon, longueurBoulonOptions)
+        spinnerSetup(dialogBinding.spDiametreBoulon, diametreBoulonOptions)
+        spinnerSetup(dialogBinding.spNeufBoulon, neufBoulonOptions)
 
         val dialog = AlertDialog.Builder(this)
             .setTitle(R.string.ajouter_bride_titre)
@@ -382,6 +394,9 @@ class MainActivity : AppCompatActivity() {
             .setPositiveButton(R.string.btn_enregistrer, null)
             .setNegativeButton(R.string.btn_annuler, null)
             .show()
+        // Fenêtre élargie (le libellé conservé dans chaque liste, ex. "Boulonnerie neuve - Oui",
+        // prend plus de place que la largeur par défaut d'un AlertDialog Material).
+        dialog.window?.setLayout((resources.displayMetrics.widthPixels * 0.9).toInt(), android.view.ViewGroup.LayoutParams.WRAP_CONTENT)
 
         lifecycleScope.launch {
             // Repères existants de l'item courant, chargés une fois à l'ouverture : vérification du
