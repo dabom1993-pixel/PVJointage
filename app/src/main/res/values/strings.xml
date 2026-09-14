@@ -123,6 +123,7 @@
     <string name="pdf_exports_titre">EXPORTS PDF SUR LA TABLETTE</string>
     <string name="pdf_exports_legende">Touchez un item pour ouvrir son dernier PDF exporté.</string>
     <string name="pdf_exports_vide">Aucun export PDF sur la tablette</string>
+    <string name="pdf_exports_choisir_revision">Quelle version consulter ?</string>
     <string name="pdf_viewer_erreur">Impossible d\'afficher ce PDF</string>
 
     <string name="export_option_excel">Excel - Mettre à jour le fichier importé</string>

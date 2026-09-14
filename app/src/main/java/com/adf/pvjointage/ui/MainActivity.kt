@@ -586,8 +586,10 @@ class MainActivity : AppCompatActivity() {
 
     /**
      * Même grille Unité × Famille que [buildCatalogueTable], sans filtre : uniquement les items
-     * ayant au moins un fichier dans [pdfFilesByItem]. Toucher un item ouvre son export PDF le
-     * plus récent dans la visionneuse interne (voir [showPdfViewer]).
+     * ayant au moins un fichier dans [pdfFilesByItem]. Toucher un item ouvre directement son
+     * export PDF s'il n'y en a qu'un ; s'il y en a plusieurs (une révision garde toujours les PDF
+     * des révisions précédentes, jamais écrasés ni supprimés), une liste permet de choisir laquelle
+     * consulter, dans la visionneuse interne (voir [showPdfViewer]).
      *
      * Limite connue : le nom de fichier n'encode que le code ITEM (pas Unité/Famille) — si le
      * même code ITEM est réutilisé dans plusieurs Unités/Familles du catalogue, ses PDF
@@ -634,10 +636,19 @@ class MainActivity : AppCompatActivity() {
                             textSize = 13f
                             setPadding(6, 4, 6, 4)
                             setOnClickListener {
-                                val latest = pdfFilesByItem[entry.item]?.maxByOrNull { it.lastModified() }
                                 // Nom du fichier réellement exporté (ex. "PV - ITEM - rev1.pdf"), pas le libellé de
                                 // révision en cours : l'item peut avoir avancé en révision depuis ce dernier export.
-                                if (latest != null) showPdfViewer(latest, latest.name)
+                                val fichiers = pdfFilesByItem[entry.item].orEmpty().sortedByDescending { it.lastModified() }
+                                when {
+                                    fichiers.isEmpty() -> {}
+                                    fichiers.size == 1 -> showPdfViewer(fichiers[0], fichiers[0].name)
+                                    else -> AlertDialog.Builder(this@MainActivity)
+                                        .setTitle(R.string.pdf_exports_choisir_revision)
+                                        .setItems(fichiers.map { it.name }.toTypedArray()) { _, which ->
+                                            showPdfViewer(fichiers[which], fichiers[which].name)
+                                        }
+                                        .show()
+                                }
                             }
                         })
                     }
