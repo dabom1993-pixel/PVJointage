@@ -143,7 +143,22 @@ class MainActivity : AppCompatActivity() {
 
         observeBridesAndInspections()
         observeItemRevision()
+        showUpdateCompletedMessageIfNeeded()
         checkForUpdateOnStartup()
+    }
+
+    /**
+     * Affiche une confirmation si l'app vient d'être relancée juste après une mise à jour
+     * installée depuis le bouton logo (flag posé par [UpdateManager.onPackageReplaced] via
+     * [com.adf.pvjointage.update.UpdateInstalledReceiver]). L'app continue de tourner normalement,
+     * seule une boîte de dialogue s'ajoute.
+     */
+    private fun showUpdateCompletedMessageIfNeeded() {
+        if (!UpdateManager.consumeJustUpdatedFlag(this)) return
+        AlertDialog.Builder(this)
+            .setMessage(R.string.maj_termine_message)
+            .setPositiveButton(R.string.maj_termine_bouton, null)
+            .show()
     }
 
     private fun saveHeader() {

@@ -151,4 +151,6 @@
     <string name="maj_autoriser_sources_message">Pour installer les mises à jour, autorisez PV Jointage à installer des applications sur cette tablette, puis revenez à l\'écran précédent.</string>
     <string name="maj_autoriser_sources_bouton">Autoriser</string>
     <string name="maj_erreur">Erreur lors de la mise à jour : %1$s</string>
+    <string name="maj_termine_message">Programme mis à jour, vous disposez de la dernière version.</string>
+    <string name="maj_termine_bouton">OK</string>
 </resources>

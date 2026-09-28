@@ -32,6 +32,7 @@ object UpdateManager {
     private const val PREFS_NAME = "update_prefs"
     private const val KEY_LAST_ASSET_ID = "last_asset_id"
     private const val KEY_PENDING_ASSET_ID = "pending_asset_id"
+    private const val KEY_JUST_UPDATED = "just_updated"
 
     data class UpdateInfo(
         val assetId: Long,
@@ -159,8 +160,8 @@ object UpdateManager {
 
     /**
      * Appelé par [UpdateInstalledReceiver] quand l'app vient d'être remplacée par la mise à jour
-     * en attente : fait juste avancer la référence locale (aucun message affiché à l'utilisateur),
-     * pour que le prochain contrôle ne re-propose pas la même version.
+     * en attente : fait avancer la référence locale et mémorise qu'un message de confirmation
+     * doit être affiché au prochain démarrage (voir [consumeJustUpdatedFlag]).
      */
     fun onPackageReplaced(context: Context) {
         val p = prefs(context)
@@ -169,8 +170,20 @@ object UpdateManager {
             p.edit()
                 .putLong(KEY_LAST_ASSET_ID, pending)
                 .remove(KEY_PENDING_ASSET_ID)
+                .putBoolean(KEY_JUST_UPDATED, true)
                 .apply()
         }
+    }
+
+    /**
+     * Lit puis efface le flag posé par [onPackageReplaced], pour que le message de confirmation
+     * ne s'affiche qu'une seule fois, au tout premier démarrage suivant la mise à jour.
+     */
+    fun consumeJustUpdatedFlag(context: Context): Boolean {
+        val p = prefs(context)
+        val justUpdated = p.getBoolean(KEY_JUST_UPDATED, false)
+        if (justUpdated) p.edit().remove(KEY_JUST_UPDATED).apply()
+        return justUpdated
     }
 
     private fun prefs(context: Context) =
