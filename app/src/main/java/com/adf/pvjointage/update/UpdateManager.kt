@@ -3,6 +3,7 @@ package com.adf.pvjointage.update
 import android.content.Context
 import android.content.Intent
 import androidx.core.content.FileProvider
+import com.adf.pvjointage.BuildConfig
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
@@ -25,6 +26,7 @@ object UpdateManager {
     private const val API_URL =
         "https://api.github.com/repos/dabom1993-pixel/PVJointage/releases/tags/tablette-latest"
     private const val ASSET_NAME = "PVJointage.apk"
+    private const val VERSION_ASSET_NAME = "version.txt"
 
     // Doit rester identique au nom de base passé à Room.databaseBuilder dans AppDatabase.kt.
     private const val DB_NAME = "pv_jointage.db"
@@ -37,7 +39,9 @@ object UpdateManager {
     data class UpdateInfo(
         val assetId: Long,
         val downloadUrl: String,
-        val sizeBytes: Long
+        val sizeBytes: Long,
+        /** Numéro de version publié dans version.txt (null pour une release plus ancienne). */
+        val versionCode: Int? = null
     )
 
     /** Interroge l'API GitHub (publique, sans authentification) pour l'asset PVJointage.apk de la release. */
@@ -54,20 +58,41 @@ object UpdateManager {
             val body = conn.inputStream.bufferedReader().use { it.readText() }
             val json = JSONObject(body)
             val assets = json.getJSONArray("assets")
+            var info: UpdateInfo? = null
+            var urlVersion: String? = null
             for (i in 0 until assets.length()) {
                 val asset = assets.getJSONObject(i)
-                if (asset.optString("name") == ASSET_NAME) {
-                    return@withContext UpdateInfo(
+                when (asset.optString("name")) {
+                    ASSET_NAME -> info = UpdateInfo(
                         assetId = asset.getLong("id"),
                         downloadUrl = asset.getString("browser_download_url"),
                         sizeBytes = asset.optLong("size", -1L)
                     )
+                    VERSION_ASSET_NAME -> urlVersion = asset.getString("browser_download_url")
                 }
             }
-            null
+            info?.copy(versionCode = urlVersion?.let { lireVersion(it) })
         } finally {
             conn.disconnect()
         }
+    }
+
+    private fun lireVersion(url: String): Int? = try {
+        val conn = (URL(url).openConnection() as HttpURLConnection).apply {
+            instanceFollowRedirects = true
+            connectTimeout = 15_000
+            readTimeout = 15_000
+            useCaches = false
+        }
+        try {
+            if (conn.responseCode == HttpURLConnection.HTTP_OK) {
+                conn.inputStream.bufferedReader().use { it.readText() }.trim().toIntOrNull()
+            } else null
+        } finally {
+            conn.disconnect()
+        }
+    } catch (_: Exception) {
+        null
     }
 
     /**
@@ -77,6 +102,10 @@ object UpdateManager {
      * proposer un re-téléchargement redondant de la version déjà en cours d'exécution.
      */
     fun hasUpdate(context: Context, info: UpdateInfo): Boolean {
+        // Référence commune avec ADF TAR : le numéro de version de l'APK installé. Une mise à
+        // jour faite depuis ADF TAR est ainsi reconnue ici, et inversement.
+        info.versionCode?.let { return it > BuildConfig.VERSION_CODE }
+        // Ancienne release sans version.txt : suivi par identifiant de fichier.
         val p = prefs(context)
         val last = p.getLong(KEY_LAST_ASSET_ID, -1L)
         if (last == -1L) {

@@ -66,7 +66,11 @@ jobs:
       # Nom de fichier fixe pour que l'URL de téléchargement ne change jamais
       # (c'est cette URL qui est encodée dans le QR code de la tablette).
       - name: Préparer l'APK sous un nom stable
-        run: cp app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/PVJointage.apk
+        run: |
+          cp app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/PVJointage.apk
+          # Numéro de version de l'APK (= numéro du run, voir app/build.gradle.kts) : lu par
+          # l'app et par ADF TAR pour savoir si une mise à jour est nécessaire.
+          echo "${{ github.run_number }}" > app/build/outputs/apk/debug/version.txt
 
       # Republie (crée ou remplace) une release GitHub à tag fixe "tablette-latest".
       # L'asset est donc toujours accessible à la même URL, quel que soit le run :
@@ -83,4 +87,6 @@ jobs:
             APK reconstruit automatiquement à chaque lancement manuel du workflow
             "Build APK". Toujours disponible à la même URL : c'est celle-ci qu'il
             faut scanner avec le QR code collé sur la tablette.
-          files: app/build/outputs/apk/debug/PVJointage.apk
+          files: |
+            app/build/outputs/apk/debug/PVJointage.apk
+            app/build/outputs/apk/debug/version.txt
