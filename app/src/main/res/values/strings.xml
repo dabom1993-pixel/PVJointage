@@ -2,6 +2,7 @@
 <resources>
     <string name="app_name">PV Jointage</string>
     <string name="titre_onglet_principal">PV de JOINTAGE</string>
+    <string name="badge_beta">BETA</string>
     <string name="title_champ">PV de JOINTAGE - DÉTAIL DE LA BRIDE</string>
     <string name="title_photos">Photos item</string>
     <string name="fermer">Fermer</string>
