@@ -58,6 +58,24 @@
                     android:textColor="@color/white"
                     android:textSize="18sp"
                     android:textStyle="bold" />
+
+                <!-- Badge "BETA" : masqué dans la variante "stable", affiché uniquement
+                     dans la variante "beta" (voir app/src/beta/res/values/badge_beta.xml). -->
+                <TextView
+                    android:id="@+id/tvBadgeBeta"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:background="@drawable/bg_badge_beta"
+                    android:paddingStart="7dp"
+                    android:paddingEnd="7dp"
+                    android:paddingTop="1dp"
+                    android:paddingBottom="1dp"
+                    android:text="@string/badge_beta"
+                    android:textColor="@color/white"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:visibility="@integer/badge_beta_visibility" />
             </LinearLayout>
 
             <!-- Client / Lieu / Date : non modifiables depuis l'app. Client & Lieu

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Variante "beta" : badge "BETA" visible (0 = visible) sur l'écran principal. -->
+    <integer name="badge_beta_visibility">0</integer>
+</resources>

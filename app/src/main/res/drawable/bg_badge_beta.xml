@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Fond du badge "BETA" (barre de titre) : pastille orange, même orange que le logo de la variante beta. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="#F28C28" />
+    <corners android:radius="10dp" />
+</shape>

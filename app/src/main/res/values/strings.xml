@@ -3,6 +3,7 @@
     <!-- app_name n'est plus défini ici : fourni par chaque variante (productFlavors "stable"/"beta"
          dans app/build.gradle.kts), pour distinguer les deux apps sur l'écran d'accueil de la tablette. -->
     <string name="titre_onglet_principal">PV de JOINTAGE</string>
+    <string name="badge_beta">BETA</string>
     <string name="title_champ">PV de JOINTAGE - DÉTAIL DE LA BRIDE</string>
     <string name="title_photos">Photos item</string>
     <string name="fermer">Fermer</string>

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Visibilité du badge "BETA" de l'écran principal : 8 = gone (variante "stable").
+         Surchargée à 0 = visible dans app/src/beta/res/values/badge_beta.xml. -->
+    <integer name="badge_beta_visibility">8</integer>
+</resources>
