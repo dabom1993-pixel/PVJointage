@@ -3,6 +3,7 @@ package com.adf.pvjointage.update
 import android.content.Context
 import android.content.Intent
 import androidx.core.content.FileProvider
+import com.adf.pvjointage.BuildConfig
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
@@ -12,19 +13,24 @@ import java.net.HttpURLConnection
 import java.net.URL
 
 /**
- * Vérifie/télécharge/installe les mises à jour de l'app depuis la release GitHub
- * à tag fixe "tablette-latest" (voir .github/workflows/build-apk.yml et README.md :
- * cette release est republiée à chaque "Run workflow", toujours au même nom
- * d'asset PVJointage.apk).
+ * Vérifie/télécharge/installe les mises à jour de l'app depuis la release GitHub à tag fixe
+ * (voir .github/workflows/build-apk.yml / build-beta-apk.yml et README.md : cette release est
+ * republiée à chaque run du workflow, toujours au même nom d'asset).
+ *
+ * Le tag et le nom d'asset dépendent de la variante compilée (voir productFlavors dans
+ * app/build.gradle.kts) : "tablette-latest"/PVJointage.apk pour la version stable (tout le
+ * monde), "tablette-beta"/PVJointage-beta.apk pour la version BETA (tablette de test). Chaque
+ * variante ne voit donc jamais les mises à jour de l'autre.
  *
  * Aucune connexion à un compte GitHub n'est nécessaire : le dépôt est public et
  * l'API/les assets de release sont accessibles anonymement.
  */
 object UpdateManager {
 
-    private const val API_URL =
-        "https://api.github.com/repos/dabom1993-pixel/PVJointage/releases/tags/tablette-latest"
-    private const val ASSET_NAME = "PVJointage.apk"
+    // BuildConfig.* n'est pas une constante de compilation Kotlin (champ Java généré) : "val", pas "const val".
+    private val API_URL =
+        "https://api.github.com/repos/dabom1993-pixel/PVJointage/releases/tags/${BuildConfig.UPDATE_RELEASE_TAG}"
+    private val ASSET_NAME = BuildConfig.UPDATE_ASSET_NAME
 
     // Doit rester identique au nom de base passé à Room.databaseBuilder dans AppDatabase.kt.
     private const val DB_NAME = "pv_jointage.db"

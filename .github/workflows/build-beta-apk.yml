@@ -1,0 +1,96 @@
+name: Build BETA APK
+
+# Se déclenche automatiquement à chaque push sur la branche de développement/test
+# "main-s3kilv" (pas besoin d'aller cliquer sur "Run workflow" à chaque fois), et reste
+# aussi disponible en déclenchement manuel une fois ce fichier présent sur la branche
+# par défaut du dépôt.
+on:
+  push:
+    branches:
+      - main-s3kilv
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Récupérer le code
+        uses: actions/checkout@v4
+
+      - name: Installer Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Accepter les licences du SDK Android
+        run: yes | sdkmanager --licenses > /dev/null || true
+
+      - name: Installer la plateforme Android nécessaire
+        run: sdkmanager "platforms;android-34" "build-tools;34.0.0" || true
+
+      - name: Générer le wrapper Gradle
+        run: gradle wrapper --gradle-version 8.7
+
+      - name: Autoriser l'exécution de gradlew
+        run: chmod +x gradlew
+
+      # Même clé de debug stable que la version stable (voir build-apk.yml) : comme l'app BETA a
+      # un identifiant de package différent (com.adf.pvjointage.beta), elle s'installe de toute
+      # façon séparément de l'app de production, signature partagée ou non.
+      - name: Générer une clé de debug stable (une seule fois)
+        run: |
+          if [ ! -f app/debug.keystore ]; then
+            keytool -genkeypair -v -keystore app/debug.keystore \
+              -storepass android -keypass android -alias androiddebugkey \
+              -keyalg RSA -keysize 2048 -validity 10000 \
+              -dname "CN=PV Jointage Debug, OU=Terrain, O=ADF, L=, S=, C=FR"
+          fi
+
+      - name: Committer la clé de debug si nouvellement générée
+        run: |
+          if [ -n "$(git status --porcelain app/debug.keystore)" ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add app/debug.keystore
+            git commit -m "Ajout de la clé de debug stable (signature APK constante entre les builds)"
+            git push
+          fi
+
+      # "assembleBetaDebug" : variante "beta" (voir productFlavors dans app/build.gradle.kts),
+      # applicationId distinct (com.adf.pvjointage.beta) -> s'installe à côté de l'app de
+      # production sur la tablette, sans l'écraser ni partager ses données.
+      - name: Compiler l'APK (debug, variante beta)
+        run: ./gradlew assembleBetaDebug --no-daemon --stacktrace
+
+      - name: Publier l'APK généré (artifact du run)
+        uses: actions/upload-artifact@v4
+        with:
+          name: PVJointage-beta-debug-apk
+          path: app/build/outputs/apk/beta/debug/*.apk
+
+      # Nom de fichier fixe pour que l'URL de téléchargement ne change jamais.
+      - name: Préparer l'APK sous un nom stable
+        run: cp app/build/outputs/apk/beta/debug/app-beta-debug.apk app/build/outputs/apk/beta/debug/PVJointage-beta.apk
+
+      # Republie (crée ou remplace) une release GitHub à tag fixe "tablette-beta", distincte de
+      # "tablette-latest" (version de production) : l'app BETA ne vérifie/télécharge ses mises à
+      # jour que depuis ce tag (voir UpdateManager.kt), jamais depuis la version de production.
+      # URL stable de téléchargement :
+      # https://github.com/<owner>/<repo>/releases/download/tablette-beta/PVJointage-beta.apk
+      - name: Publier/mettre à jour la release "tablette-beta"
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: tablette-beta
+          name: "Version BETA (tablette de test)"
+          body: >
+            APK de test, reconstruit automatiquement à chaque modification poussée sur la
+            branche de développement. S'installe en tant qu'application séparée de la
+            version de production ("PV Jointage BETA"), sans l'affecter. Toujours
+            disponible à la même URL.
+          files: app/build/outputs/apk/beta/debug/PVJointage-beta.apk

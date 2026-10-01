@@ -69,6 +69,31 @@ est en plus faite automatiquement juste avant chaque installation.
 
 ---
 
+## 🧪 Version BETA (tablette de test uniquement)
+
+Les nouveautés en cours de développement sont d'abord testées via une
+**application BETA distincte**, installable **à côté** de l'app de
+production (PV Jointage) sans jamais l'affecter — elles ont un identifiant
+de package différent (`com.adf.pvjointage` vs `com.adf.pvjointage.beta`),
+donc des données et des mises à jour totalement séparées.
+
+- Nom affichée sur la tablette : **"PV Jointage BETA"**.
+- Compilée automatiquement par `.github/workflows/build-beta-apk.yml` à
+  chaque modification poussée sur la branche de développement.
+- URL de téléchargement stable (release GitHub à tag fixe `tablette-beta`) :
+  ```
+  https://github.com/dabom1993-pixel/PVJointage/releases/download/tablette-beta/PVJointage-beta.apk
+  ```
+- Une fois installée, elle se met à jour elle-même (bouton logo) uniquement
+  depuis cette release BETA, jamais depuis la version de production.
+
+Une fois les modifications validées sur la tablette de test, elles sont
+reportées dans la version stable (branche de production), qui se recompile
+alors via `build-apk.yml` et devient accessible à tous via le mécanisme
+habituel ci-dessus.
+
+---
+
 ## Ce qui a été repris de l'Excel
 
 | Onglet Excel | Équivalent dans l'app |
@@ -115,9 +140,13 @@ Les fichiers exportés sont écrits dans
 
 ### Générer un APK à installer directement
 
-Dans Android Studio : `Build > Build Bundle(s) / APK(s) > Build APK(s)`.
-L'APK généré (`app/build/outputs/apk/debug/app-debug.apk`) peut être copié et
-installé directement sur la tablette (autoriser "Sources inconnues").
+Choisir d'abord la variante (`Build > Select Build Variant...`) : `stableDebug`
+(app de production) ou `betaDebug` (app de test, voir section BETA plus haut),
+puis `Build > Build Bundle(s) / APK(s) > Build APK(s)`. L'APK généré
+(`app/build/outputs/apk/stable/debug/app-stable-debug.apk` ou
+`app/build/outputs/apk/beta/debug/app-beta-debug.apk` selon la variante)
+peut être copié et installé directement sur la tablette (autoriser
+"Sources inconnues").
 
 ## Points à personnaliser selon vos besoins
 

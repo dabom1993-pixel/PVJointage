@@ -16,6 +16,30 @@ android {
         versionName = "1.0"
     }
 
+    // Deux variantes installables côte à côte sur une même tablette (applicationId différent) :
+    // - "stable" : l'application de production, accessible à tous (release GitHub "tablette-latest").
+    // - "beta"   : app distincte ("PV Jointage BETA"), pour tester les nouveautés sur une tablette
+    //              avant de les diffuser à tous (release GitHub "tablette-beta").
+    // Chaque variante vérifie/installe ses propres mises à jour séparément (voir UpdateManager.kt),
+    // sans jamais interférer avec l'autre.
+    flavorDimensions += "channel"
+    productFlavors {
+        create("stable") {
+            dimension = "channel"
+            resValue("string", "app_name", "PV Jointage")
+            buildConfigField("String", "UPDATE_RELEASE_TAG", "\"tablette-latest\"")
+            buildConfigField("String", "UPDATE_ASSET_NAME", "\"PVJointage.apk\"")
+        }
+        create("beta") {
+            dimension = "channel"
+            applicationIdSuffix = ".beta"
+            versionNameSuffix = "-beta"
+            resValue("string", "app_name", "PV Jointage BETA")
+            buildConfigField("String", "UPDATE_RELEASE_TAG", "\"tablette-beta\"")
+            buildConfigField("String", "UPDATE_ASSET_NAME", "\"PVJointage-beta.apk\"")
+        }
+    }
+
     signingConfigs {
         // Clé de debug fixe (générée une fois par le workflow GitHub Actions et
         // committée dans le dépôt) afin que chaque nouvelle APK puisse s'installer
@@ -48,6 +72,7 @@ android {
 
     buildFeatures {
         viewBinding = true
+        buildConfig = true
     }
 
     packaging {
